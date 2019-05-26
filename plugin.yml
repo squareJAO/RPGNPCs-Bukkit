@@ -1,0 +1,12 @@
+name: RPGNPCs
+main: rpg_npcs.RPGNPCsPlugin
+version: 0.0.1
+api-version: 1.13
+depend: [Citizens, HolographicDisplays]
+softdepend: [PlaceholderAPI]
+commands:
+   reloadRPGNPCs:
+      description: Reloads all rpg npc data
+      usage: /reloadRPGNPCs
+      permission: RPGNPCs.reload
+      permission-message: You don't have permission to do that

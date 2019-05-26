@@ -16,11 +16,13 @@ import rpg_npcs.script.Script;
 public abstract class Trigger implements Listener {
 	private final Collection<Prerequisite> prerequisites;
 	protected final Map<RpgTrait, WeightedSet<Script>> npcScripts;
+	private final int priority;
 	
-	public Trigger(Collection<Prerequisite> prerequisites) {
+	public Trigger(Collection<Prerequisite> prerequisites, int priority) {
 		super();
 		this.npcScripts = new HashMap<RpgTrait, WeightedSet<Script>>();
 		this.prerequisites = prerequisites;
+		this.priority = priority;
 	}
 	
 	public void registerNPC(RpgTrait npc, WeightedSet<Script> weightedScriptSet) {
@@ -32,7 +34,7 @@ public abstract class Trigger implements Listener {
 	}
 	
 	protected void trigger(Player player, RpgTrait npc) {
-		if (arePrerequisitesMet(player, npc) && !npc.isTalking()) {
+		if (arePrerequisitesMet(player, npc) && priority > npc.getConversationPriority()) {
 			WeightedSet<Script> scriptSet = npcScripts.get(npc);
 			Script script = scriptSet.getRandom();
 			
@@ -41,7 +43,7 @@ public abstract class Trigger implements Listener {
 			}
 			
 			if (script != null) {
-				npc.startConversation(script, player);
+				npc.startConversation(script, player, priority);
 			} else {
 				Bukkit.getLogger().warning("Script was null");
 			}

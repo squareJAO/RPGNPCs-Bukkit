@@ -10,12 +10,12 @@ public class TriggerFactory {
 		public Trigger trigger = null;
 	}
 	
-	public static TriggerFactoryReturnData createPrerequisite(String type, Collection<Prerequisite> prerequisites) {
+	public static TriggerFactoryReturnData createTrigger(String type, Collection<Prerequisite> prerequisites, int priority) {
 		TriggerFactoryReturnData returnData = new TriggerFactoryReturnData();
 
 		switch (type.toLowerCase()) {
 		case "playermove":
-			returnData.trigger = new MoveTrigger(prerequisites);
+			returnData.trigger = new MoveTrigger(prerequisites, priority);
 			break;
 		default:
 			returnData.errorLogString = "Unrecognised trigger type: '" + type + "'";

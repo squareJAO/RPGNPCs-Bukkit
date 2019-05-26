@@ -7,49 +7,55 @@ import rpg_npcs.script.Script;
 import rpg_npcs.script.node.ScriptNode;
 
 public class Conversation {
-	private Player _player;
-	private NPC _npc;
-	private SpeechBubble _bubble;
-	private boolean _isRunning;
-	private ScriptNode _currentNode;
+	private final Player player;
+	private final NPC npc;
+	private final SpeechBubble bubble;
+	private final int conversationPriority;
+	private boolean isRunning;
+	private ScriptNode currentNode;
 	
-	public Conversation(SpeechBubble bubble, Player player, NPC npc) {
-		_player = player;
-		_npc = npc;
-		_bubble = bubble;
-		_isRunning = false;
+	public Conversation(SpeechBubble bubble, Player player, NPC npc, int conversationPriority) {
+		this.player = player;
+		this.npc = npc;
+		this.bubble = bubble;
+		isRunning = false;
+		this.conversationPriority = conversationPriority;
+	}
+	
+	public int getPriority() {
+		return conversationPriority;
 	}
 	
 	public boolean isPlayer(Player player) {
-		return this._player == player;
+		return this.player == player;
 	}
 	
 	public Player getPlayer() {
-		if (!_isRunning) {
+		if (!isRunning) {
 			return null;
 		}
 		
-		return _player;
+		return player;
 	}
 
 	public NPC getNpc() {
-		if (!_isRunning) {
+		if (!isRunning) {
 			return null;
 		}
 		
-		return _npc;
+		return npc;
 	}
 	
 	public SpeechBubble getSpeechBubble() {
-		if (!_isRunning) {
+		if (!isRunning) {
 			return null;
 		}
 		
-		return _bubble;
+		return bubble;
 	}
 
 	public boolean isRunning() {
-		return _isRunning;
+		return isRunning;
 	}
 
 	/**
@@ -57,7 +63,7 @@ public class Conversation {
 	 */
 	public void startConversation(Script script) {
 		// Stop any previous conversations
-		if (_isRunning) {
+		if (isRunning) {
 			stopConversation();
 		}
 		
@@ -68,8 +74,8 @@ public class Conversation {
 		}
 		
 		// Set data
-		_isRunning = true;
-		_currentNode = script.initialNode;
+		isRunning = true;
+		currentNode = script.initialNode;
 		
 		// Start conversation
 		script.initialNode.startNode(this);
@@ -80,7 +86,7 @@ public class Conversation {
 	 */
 	public void stopConversation() {
 		// Can't stop an already stopped conversation
-		if (!_isRunning) {
+		if (!isRunning) {
 			throw new ConversationNotRunningException(this);
 		}
 		
@@ -92,33 +98,33 @@ public class Conversation {
 		setCurrentNode(null);
 		
 		// Clear speech bubble
-		_bubble.clearText();
+		bubble.clearText();
 	}
 
 	/**
 	 * @return the current node
 	 */
 	public ScriptNode getCurrentNode() {
-		if (!_isRunning) {
+		if (!isRunning) {
 			return null;
 		}
 		
-		return _currentNode;
+		return currentNode;
 	}
 
 	/**
 	 * @param currentNode the node to set as currently executing
 	 */
 	public void setCurrentNode(ScriptNode currentNode) {
-		if (!_isRunning) {
+		if (!isRunning) {
 			throw new ConversationNotRunningException(this);
 		}
 		
 		if (currentNode == null) {
-			_isRunning = false;
+			isRunning = false;
 		}
 		
-		this._currentNode = currentNode;
+		this.currentNode = currentNode;
 	}
 	
 }

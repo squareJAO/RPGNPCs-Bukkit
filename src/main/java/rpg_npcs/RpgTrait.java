@@ -85,6 +85,14 @@ public class RpgTrait extends Trait {
 		speechBubble.clearText();
 	}
 	
+	public int getConversationPriority() {
+		if (!isTalking()) {
+			return Integer.MIN_VALUE;
+		}
+		
+		return currentConversation.getPriority();
+	}
+	
 	public boolean isTalking() {
 		if (currentConversation == null) {
 			return false;
@@ -93,14 +101,14 @@ public class RpgTrait extends Trait {
 		return currentConversation.isRunning();
 	}
 	
-	public void startConversation(Script script, Player player) {
+	public void startConversation(Script script, Player player, int priority) {
 		// Stop old conversation
 		if (currentConversation != null && currentConversation.isRunning()) {
 			currentConversation.stopConversation();
 		}
 		
 		// Start new conversation
-		currentConversation = new Conversation(speechBubble, player, this.getNPC());
+		currentConversation = new Conversation(speechBubble, player, this.getNPC(), priority);
 		currentConversation.startConversation(script);
 	}
 }

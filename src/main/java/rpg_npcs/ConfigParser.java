@@ -42,9 +42,11 @@ public class ConfigParser {
 		 * [] required
 		 * () optional
 		 * 
+		 * defaultEventPriority: [number]
 		 * triggers:
 		 *   eventName1:
 		 *     type: [typeName]
+		 *     priority: [number]
 		 *     prerequisites:
 		 *       (prerequisite1: val1)
 		 *       (prerequisite2: val2)
@@ -54,7 +56,7 @@ public class ConfigParser {
 		 *     parents:
 		 *       - [parent1]
 		 *       - [parent2]
-		 *     triggers:
+		 *     dialogues:
 		 *       eventName1: script1
 		 *       eventName2:
 		 *         - script1
@@ -78,10 +80,12 @@ public class ConfigParser {
 		
 		String log = "";
 		
+		int defaultEventPriority = config.getInt("defaultEventPriority");
+		
 		// Resolve events
 		Map<String, Trigger> triggerMap = new HashMap<String, Trigger>();
 		ConfigurationSection triggersConfigSection = config.getConfigurationSection("triggers");
-		log += getTriggers(triggersConfigSection, triggerMap);
+		log += getTriggers(triggersConfigSection, triggerMap, defaultEventPriority);
 		
 		// Resolve roles
 		Map<String, Role> rolesMap = new HashMap<String, Role>();
@@ -91,7 +95,7 @@ public class ConfigParser {
 		return new ConfigResult(log, triggerMap, rolesMap);
 	}
 	
-	private static String getTriggers(ConfigurationSection triggersConfigSection, Map<String, Trigger> triggerMap) {
+	private static String getTriggers(ConfigurationSection triggersConfigSection, Map<String, Trigger> triggerMap, int defaultEventPriority) {
 		Set<String> triggerNameStrings = triggersConfigSection.getKeys(false);
 		
 		// Log
@@ -114,6 +118,14 @@ public class ConfigParser {
 			}
 			String typeString = triggerConfigSection.getString("type");
 			log += "§f - type: " + typeString + "\n";
+			
+			// Get priority
+			int priority = defaultEventPriority;
+			if (triggersConfigSection.contains("priority") && triggersConfigSection.isInt("priority")) {
+				priority = triggersConfigSection.getInt("priority");
+				
+				log += "§f - priority: " + priority + "\n";
+			}
 			
 			// Check if any prerequisites exist
 			Collection<Prerequisite> prerequisites = new HashSet<Prerequisite>();
@@ -147,7 +159,7 @@ public class ConfigParser {
 			}
 			
 			// Create trigger
-			TriggerFactoryReturnData returnTriggerData = TriggerFactory.createPrerequisite(typeString, prerequisites);
+			TriggerFactoryReturnData returnTriggerData = TriggerFactory.createTrigger(typeString, prerequisites, priority);
 			
 			if (returnTriggerData.trigger != null) {
 				triggerMap.put(triggerNameString, returnTriggerData.trigger);

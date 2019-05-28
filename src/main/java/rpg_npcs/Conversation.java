@@ -1,6 +1,7 @@
 package rpg_npcs;
 
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import net.citizensnpcs.api.npc.NPC;
 import rpg_npcs.script.Script;
@@ -11,15 +12,17 @@ public class Conversation {
 	private final NPC npc;
 	private final SpeechBubble bubble;
 	private final int conversationPriority;
+	public final Plugin instancingPlugin;
 	private boolean isRunning;
 	private ScriptNode currentNode;
 	
-	public Conversation(SpeechBubble bubble, Player player, NPC npc, int conversationPriority) {
+	public Conversation(Plugin instancingPlugin, SpeechBubble bubble, Player player, NPC npc, int conversationPriority) {
 		this.player = player;
 		this.npc = npc;
 		this.bubble = bubble;
 		isRunning = false;
 		this.conversationPriority = conversationPriority;
+		this.instancingPlugin = instancingPlugin;
 	}
 	
 	public int getPriority() {

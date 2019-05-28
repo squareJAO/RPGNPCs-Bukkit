@@ -23,7 +23,7 @@ public class ScriptFactoryPausePart extends ScriptFactoryPart {
 			return ScriptFactoryPartData.fromError("Given delay " + givenDelay + " cannot be negative");
 		}
 		
-		ScriptPauseNode newNode = new ScriptPauseNode(plugin, givenDelay);
+		ScriptPauseNode newNode = new ScriptPauseNode(givenDelay);
 		return ScriptFactoryPartData.fromNode(newNode);
 		
 	}

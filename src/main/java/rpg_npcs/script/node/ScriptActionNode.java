@@ -4,13 +4,12 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import net.citizensnpcs.api.npc.NPC;
-import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.SpeechBubble;
 
 public abstract class ScriptActionNode extends ScriptLinearNode {
 
-	public ScriptActionNode(RPGNPCsPlugin plugin) {
-		super(plugin);
+	public ScriptActionNode() {
+		super();
 	}
 	
 	protected NPC getNPC(SpeechBubble bubble) {

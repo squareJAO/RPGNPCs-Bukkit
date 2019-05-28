@@ -18,7 +18,7 @@ public class ScriptFactoryStatePart extends ScriptFactoryPart {
 		// Parse command
 		switch (instruction) {
 		case "": // Clear
-			newNode = new ScriptClearNode(plugin);
+			newNode = new ScriptClearNode();
 			break;
 		default:
 			return ScriptFactoryPartData.fromError("Unknown state: '" + instruction + "'");

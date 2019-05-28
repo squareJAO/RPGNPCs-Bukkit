@@ -108,7 +108,7 @@ public class RpgTrait extends Trait {
 		}
 		
 		// Start new conversation
-		currentConversation = new Conversation(speechBubble, player, this.getNPC(), priority);
+		currentConversation = new Conversation(instancingPlugin, speechBubble, player, this.getNPC(), priority);
 		currentConversation.startConversation(script);
 	}
 }

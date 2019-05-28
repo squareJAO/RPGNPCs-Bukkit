@@ -1,14 +1,13 @@
 package rpg_npcs.script.node;
 
 import rpg_npcs.Conversation;
-import rpg_npcs.RPGNPCsPlugin;
 
 public abstract class ScriptLinearNode extends ScriptNode {
 	
 	protected ScriptNode _nextNode;
 
-	public ScriptLinearNode(RPGNPCsPlugin plugin) {
-		super(plugin);
+	public ScriptLinearNode() {
+		super();
 	}
 	
 	public void setNextNode(ScriptNode nextNode) {

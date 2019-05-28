@@ -2,14 +2,13 @@ package rpg_npcs.script.node;
 
 import net.citizensnpcs.trait.LookClose;
 import rpg_npcs.Conversation;
-import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.SpeechBubble;
 
 public class ScriptLookCloseNode extends ScriptActionNode {
 	protected final boolean _enable;
 	
-	public ScriptLookCloseNode(RPGNPCsPlugin plugin, boolean enable) {
-		super(plugin);
+	public ScriptLookCloseNode(boolean enable) {
+		super();
 		
 		_enable = enable;
 	}

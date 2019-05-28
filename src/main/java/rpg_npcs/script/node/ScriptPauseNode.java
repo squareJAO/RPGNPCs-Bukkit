@@ -7,14 +7,13 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import rpg_npcs.Conversation;
-import rpg_npcs.RPGNPCsPlugin;
 
 public class ScriptPauseNode  extends ScriptLinearNode {
 	private final int _delay; // The time to pause
 	private Map<Conversation, BukkitTask> _pauseTasks = new HashMap<Conversation, BukkitTask>();
 	
-	public ScriptPauseNode(RPGNPCsPlugin plugin, int delay) {
-		super(plugin);
+	public ScriptPauseNode(int delay) {
+		super();
 		
 		_delay = delay;
 	}
@@ -32,7 +31,7 @@ public class ScriptPauseNode  extends ScriptLinearNode {
 				// Trigger next event
 				thisConversationPauseNode.onFinished(conversation);
 			}
-		}.runTaskLater(instancingPlugin, _delay);
+		}.runTaskLater(conversation.instancingPlugin, _delay);
 		
 		_pauseTasks.put(conversation, currentPause);
 	}

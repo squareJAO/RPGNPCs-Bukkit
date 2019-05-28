@@ -59,7 +59,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		
 		// Load all conversations
 		ParseLog log = reloadData();
-		getLogger().info(log.getFormattedString());
+		for (String string : log.getFormattedString().split("\n")) {
+			getLogger().info(string);
+		}
 		
 		// Add all custom traits
 		CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(RpgTrait.class).withName("Rpgnpc"));
@@ -69,7 +71,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		this.saveConfig();
 	}
 	
-	public boolean hasPlaceholderAPI() {
+	public static boolean hasPlaceholderAPI() {
 		return Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
 	}
 	
@@ -79,7 +81,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	
 	public void buildScriptFactory() {
 		ScriptFactoryPart[] partsArray = parts.toArray(new ScriptFactoryPart[parts.size()]);
-		scriptFactory = new ScriptFactory(this, partsArray, 0.8, 20, "§7");
+		scriptFactory = new ScriptFactory(partsArray, 0.8, 20, "§7");
 	}
 
 	public ParseLog reloadData() {
@@ -92,8 +94,6 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		for (RpgTrait npc : npcs) {
 			unbindNpcTriggers(npc);
 		}
-		
-		// Stop Roles
 		
 		
 		// Set new data
@@ -115,6 +115,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	}
 	
 	public void registerRPGNPC(RpgTrait npc) {
+		getLogger().info("Registering NPC " + npc.getNPC().getName());
 		npcs.add(npc);
 		bindNpcTriggers(npc);
 	}

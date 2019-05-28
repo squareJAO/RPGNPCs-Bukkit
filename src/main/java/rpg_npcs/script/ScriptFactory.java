@@ -1,9 +1,7 @@
 package rpg_npcs.script;
 
 import java.util.Map;
-import java.util.logging.Level;
 
-import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 import rpg_npcs.script.node.ScriptClearNode;
@@ -16,15 +14,11 @@ public class ScriptFactory {
 	private final String defaultLineStartString;
 	private final ScriptFactoryPart[] factoryParts;
 	
-	private RPGNPCsPlugin plugin;
-	
-	public ScriptFactory(RPGNPCsPlugin plugin, ScriptFactoryPart[] factoryParts, double defaultSpeed, int charactersPerWrap, String defaultLineStartString) {
+	public ScriptFactory(ScriptFactoryPart[] factoryParts, double defaultSpeed, int charactersPerWrap, String defaultLineStartString) {
 		this.defaultSpeed = defaultSpeed;
 		this.charactersPerWrap = charactersPerWrap;
 		this.defaultLineStartString = defaultLineStartString;
 		this.factoryParts = factoryParts;
-		
-		this.plugin = plugin;
 	}
 	
 	public ScriptFactoryState createConversationTree(Map<String, String> instructions, ScriptMap parentScriptsMap) {
@@ -56,7 +50,7 @@ public class ScriptFactory {
 			}
 
 			// Start each instruction path with a clear node
-			Script rootScript = new Script(lineID, new ScriptClearNode(plugin));
+			Script rootScript = new Script(lineID, new ScriptClearNode());
 			
 			// Populate hashmaps
 			state.addScript(rootScript);
@@ -86,7 +80,7 @@ public class ScriptFactory {
 			return workingNode;
 		}
 		
-		ScriptLinearNode nextNode = new ScriptTextNode(plugin, spokenTextString, state.TextSpeed, charactersPerWrap, defaultLineStartString);
+		ScriptLinearNode nextNode = new ScriptTextNode(spokenTextString, state.TextSpeed, charactersPerWrap, defaultLineStartString);
 		workingNode.setNextNode(nextNode);
 		return nextNode;
 	}
@@ -151,7 +145,7 @@ public class ScriptFactory {
 						
 						// Check if done
 						if (!state.BranchDone && !(data.node instanceof ScriptLinearNode)) {
-							plugin.getLogger().log(Level.SEVERE, "Returned conversation node was non-linear but the branch has not been marked as done. Expect bugs.");
+							state.log.addError("Returned conversation node was non-linear but the branch has not been marked as done. Expect bugs.");
 						} else if (data.node instanceof ScriptLinearNode) {
 							workingNode = (ScriptLinearNode)data.node;
 						}

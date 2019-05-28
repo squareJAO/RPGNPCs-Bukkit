@@ -27,8 +27,8 @@ public class ScriptTextNode extends ScriptLinearNode {
 	
 	private Map<Conversation, BukkitTask> _addTextTasks = new HashMap<Conversation, BukkitTask>();
 	
-	public ScriptTextNode(RPGNPCsPlugin plugin, String text, double speed, int charactersPerWrap, String defaultLineStartString) {
-		super(plugin);
+	public ScriptTextNode(String text, double speed, int charactersPerWrap, String defaultLineStartString) {
+		super();
 		
 		_templateTextString = text;
 		_textSpeed = speed;
@@ -44,7 +44,7 @@ public class ScriptTextNode extends ScriptLinearNode {
 		String _textString;
 
 		// Check if PlaceholdersAPI is present and format text
-		if (instancingPlugin.hasPlaceholderAPI()) {
+		if (RPGNPCsPlugin.hasPlaceholderAPI()) {
 			_textString = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), _templateTextString);
 		} else {
 			_textString = _templateTextString;
@@ -130,7 +130,7 @@ public class ScriptTextNode extends ScriptLinearNode {
 					_charsToAdd -= 1;
 				}
 			}
-		}.runTaskTimer(instancingPlugin, 1, TICKS_PER_CYCLE);
+		}.runTaskTimer(conversation.instancingPlugin, 1, TICKS_PER_CYCLE);
 		
 		_addTextTasks.put(conversation, newTask);
 	}

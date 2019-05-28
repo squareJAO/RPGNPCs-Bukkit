@@ -6,15 +6,14 @@ import org.bukkit.entity.Player;
 import com.gmail.filoghost.holographicdisplays.api.handler.TouchHandler;
 
 import rpg_npcs.Conversation;
-import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.SpeechBubble;
 import rpg_npcs.script.Script;
 
 public class ScriptQuestionNode extends ScriptNode {
 	private final List<QuestionOption> _questions;
 
-	public ScriptQuestionNode(RPGNPCsPlugin plugin, List<QuestionOption> questions) {
-		super(plugin);
+	public ScriptQuestionNode(List<QuestionOption> questions) {
+		super();
 		
 		_questions = questions;
 	}

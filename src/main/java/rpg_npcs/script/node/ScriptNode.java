@@ -2,13 +2,11 @@ package rpg_npcs.script.node;
 
 import rpg_npcs.Conversation;
 import rpg_npcs.ConversationNotRunningException;
-import rpg_npcs.RPGNPCsPlugin;
 
 public abstract class ScriptNode {
-	protected RPGNPCsPlugin instancingPlugin;
 	
-	public ScriptNode(RPGNPCsPlugin plugin) {
-		instancingPlugin = plugin;
+	public ScriptNode() {
+		
 	}
 	
 	public void startNode(Conversation conversation) {

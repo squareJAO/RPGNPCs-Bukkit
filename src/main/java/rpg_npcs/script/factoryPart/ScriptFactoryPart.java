@@ -1,8 +1,5 @@
 package rpg_npcs.script.factoryPart;
 
-import org.bukkit.Bukkit;
-
-import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.script.ScriptFactoryPartData;
 import rpg_npcs.script.ScriptFactoryState;
 
@@ -11,8 +8,6 @@ public abstract class ScriptFactoryPart {
 	public final char StartChar;
 	public final char EndChar;
 	
-	protected final RPGNPCsPlugin plugin;
-	
 	/**
 	 * @param StartChar The character to trigger this factory consuming data
 	 * @param EndChar The character marking the end of the factory consuming data
@@ -20,9 +15,6 @@ public abstract class ScriptFactoryPart {
 	public ScriptFactoryPart(char StartChar, char EndChar) {
 		this.StartChar = StartChar;
 		this.EndChar = EndChar;
-		
-		// Get plugin
-		plugin = (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
 	}
 	
 	/**

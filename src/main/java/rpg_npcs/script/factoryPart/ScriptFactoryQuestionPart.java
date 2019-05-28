@@ -45,7 +45,7 @@ public class ScriptFactoryQuestionPart extends ScriptFactoryPart {
 		}
 		
 		// Create question node
-		ScriptQuestionNode questionNode = new ScriptQuestionNode(plugin, optionList);
+		ScriptQuestionNode questionNode = new ScriptQuestionNode(optionList);
 		
 		// Can't add any text after a question so mark the branch as done
 		state.BranchDone = true;

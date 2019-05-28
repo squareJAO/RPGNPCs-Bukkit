@@ -1,12 +1,11 @@
 package rpg_npcs.script.node;
 
 import rpg_npcs.Conversation;
-import rpg_npcs.RPGNPCsPlugin;
 
 public class ScriptClearNode extends ScriptLinearNode {
 
-	public ScriptClearNode(RPGNPCsPlugin plugin) {
-		super(plugin);
+	public ScriptClearNode() {
+		super();
 	}
 
 	@Override

@@ -3,13 +3,12 @@ package rpg_npcs.script.node;
 import org.bukkit.entity.Player;
 
 import rpg_npcs.Conversation;
-import rpg_npcs.RPGNPCsPlugin;
 
 public class ScriptCrouchNode extends ScriptActionNode {
 	protected final boolean _crouch;
 
-	public ScriptCrouchNode(RPGNPCsPlugin plugin, boolean crouch) {
-		super(plugin);
+	public ScriptCrouchNode(boolean crouch) {
+		super();
 		
 		_crouch = crouch;
 	}

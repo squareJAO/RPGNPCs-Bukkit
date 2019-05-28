@@ -18,16 +18,16 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 		// Parse command
 		switch (instruction) {
 		case "lookclose:true": // Start looking close
-			newNode = new ScriptLookCloseNode(plugin, true);
+			newNode = new ScriptLookCloseNode(true);
 			break;
 		case "lookclose:false": // Stop looking close
-			newNode = new ScriptLookCloseNode(plugin, false);
+			newNode = new ScriptLookCloseNode(false);
 			break;
 		case "crouch": // Start crouching
-			newNode = new ScriptCrouchNode(plugin, true);
+			newNode = new ScriptCrouchNode(true);
 			break;
 		case "uncrouch": // Stop crouching
-			newNode = new ScriptCrouchNode(plugin, false);
+			newNode = new ScriptCrouchNode(false);
 			break;
 		default:
 			return ScriptFactoryPartData.fromError("Unknown command: '" + instruction + "'");

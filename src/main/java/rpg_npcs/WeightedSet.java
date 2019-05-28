@@ -1,6 +1,7 @@
 package rpg_npcs;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -23,6 +24,18 @@ public class WeightedSet <T extends Object> {
         e.object = object;
         e.accumulatedWeight = accumulatedWeight;
         entries.add(e);
+    }
+    
+    public Map<T, Integer> getEntryMap() {
+    	Map<T, Integer> entryMap = new HashMap<T, Integer>();
+    	
+    	int lastWeight = 0;
+    	for (Entry entry : entries) {
+    		entryMap.put(entry.object, entry.accumulatedWeight - lastWeight);
+    		lastWeight = entry.accumulatedWeight;
+		}
+    	
+    	return entryMap;
     }
     
     public <Q extends Object> WeightedSet<Q> zip(Map<T, Q> map) {
@@ -54,7 +67,7 @@ public class WeightedSet <T extends Object> {
     }
 
     public T getRandom() {
-    	double targetWeight = rand.nextDouble() * accumulatedWeight * 0.99999;
+    	double targetWeight = rand.nextDouble() * accumulatedWeight;
         
         return findEntryWithWeight(targetWeight);
     }

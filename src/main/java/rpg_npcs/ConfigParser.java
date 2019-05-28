@@ -129,7 +129,7 @@ public class ConfigParser {
 			
 			// Get priority
 			int priority = defaultEventPriority;
-			if (triggersConfigSection.contains("priority") && triggersConfigSection.isInt("priority")) {
+			if (triggerConfigSection.contains("priority") && triggerConfigSection.isInt("priority")) {
 				priority = triggersConfigSection.getInt("priority");
 				
 				log.addInfo(" - priority: " + priority);

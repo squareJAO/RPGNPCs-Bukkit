@@ -24,13 +24,13 @@ import rpg_npcs.trigger.TriggerFactory.TriggerFactoryReturnData;
 
 public class ConfigParser {
 	public static class ConfigResult {
-		public final String logString;
+		public final ParseLog log;
 		public final Map<String, Trigger> triggerMap;
 		public final Map<String, Role> rolesMap;
 		
-		public ConfigResult(String logString, Map<String, Trigger> triggerMap, Map<String, Role> rolesMap) {
+		public ConfigResult(ParseLog log, Map<String, Trigger> triggerMap, Map<String, Role> rolesMap) {
 			super();
-			this.logString = logString;
+			this.log = log;
 			this.triggerMap = triggerMap;
 			this.rolesMap = rolesMap;
 		}
@@ -78,53 +78,61 @@ public class ConfigParser {
 		 *     scripts: (...)
 		 */
 		
-		String log = "";
+		ParseLog log = new ParseLog();
 		
 		int defaultEventPriority = config.getInt("defaultEventPriority");
 		
 		// Resolve events
-		Map<String, Trigger> triggerMap = new HashMap<String, Trigger>();
-		ConfigurationSection triggersConfigSection = config.getConfigurationSection("triggers");
-		log += getTriggers(triggersConfigSection, triggerMap, defaultEventPriority);
+		Map<String, Trigger> triggerMap;
+		if (config.contains("triggers") && config.isConfigurationSection("triggers")) {
+			ConfigurationSection triggersConfigSection = config.getConfigurationSection("triggers");
+			triggerMap = getTriggers(log, triggersConfigSection, defaultEventPriority);
+		} else {
+			triggerMap = new HashMap<String, Trigger>();
+		}
 		
 		// Resolve roles
-		Map<String, Role> rolesMap = new HashMap<String, Role>();
-		ConfigurationSection rolesConfigSection = config.getConfigurationSection("roles");
-		log += getRoles(rolesConfigSection, triggerMap, scriptFactory, rolesMap);
+		Map<String, Role> rolesMap;
+		if (config.contains("roles") && config.isConfigurationSection("roles")) {
+			ConfigurationSection rolesConfigSection = config.getConfigurationSection("roles");
+			rolesMap = getRoles(log, rolesConfigSection, triggerMap, scriptFactory);
+		} else {
+			rolesMap = new HashMap<String, Role>();
+		}
 		
 		return new ConfigResult(log, triggerMap, rolesMap);
 	}
 	
-	private static String getTriggers(ConfigurationSection triggersConfigSection, Map<String, Trigger> triggerMap, int defaultEventPriority) {
+	private static Map<String, Trigger> getTriggers(ParseLog log, ConfigurationSection triggersConfigSection, int defaultEventPriority) {
+		Map<String, Trigger> triggerMap = new HashMap<String, Trigger>();
 		Set<String> triggerNameStrings = triggersConfigSection.getKeys(false);
 		
-		// Log
-		String log = "§fFound " + triggerNameStrings.size() + " triggers\n";
+		log.addInfo("Found " + triggerNameStrings.size() + " triggers");
 		
 		// Loop and resolve
 		for (String triggerNameString : triggerNameStrings) {
 			ConfigurationSection triggerConfigSection = triggersConfigSection.getConfigurationSection(triggerNameString);
 			
-			log += "§fTrigger " + triggerNameString + ":\n";
+			log.addInfo("Trigger " + triggerNameString + ":");
 			
 			// Get type
 			if (!triggerConfigSection.contains("type")) {
-				log += "§4Trigger " + triggerNameString + " does not have a type";
+				log.addError("Trigger " + triggerNameString + " does not have a type");
 				continue;
 			}
 			if (!triggerConfigSection.isString("type")) {
-				log += "§4Trigger " + triggerNameString + "'s type is not a string";
+				log.addError("Trigger " + triggerNameString + "'s type is not a string");
 				continue;
 			}
 			String typeString = triggerConfigSection.getString("type");
-			log += "§f - type: " + typeString + "\n";
+			log.addInfo(" - type: " + typeString);
 			
 			// Get priority
 			int priority = defaultEventPriority;
 			if (triggersConfigSection.contains("priority") && triggersConfigSection.isInt("priority")) {
 				priority = triggersConfigSection.getInt("priority");
 				
-				log += "§f - priority: " + priority + "\n";
+				log.addInfo(" - priority: " + priority);
 			}
 			
 			// Check if any prerequisites exist
@@ -132,13 +140,13 @@ public class ConfigParser {
 			if (triggerConfigSection.contains("prerequisites")) {
 				if (!triggerConfigSection.isConfigurationSection("prerequisites")) {
 					// If prerequisites are badly formatted then skip this trigger
-					log += "§4Trigger " + triggerNameString + " prerequisites are in an unrecognised format";
+					log.addError("Trigger " + triggerNameString + " prerequisites are in an unrecognised format");
 					continue;
 				}
 				
 				// Create prerequisites
 				Map<String, Object> prerequisitesConfigSet = triggerConfigSection.getConfigurationSection("prerequisites").getValues(false);
-				log += "§f - prerequisites: \n";
+				log.addInfo(" - prerequisites:");
 				for (String keyString : prerequisitesConfigSet.keySet()) {
 					// Extract key and value
 					String valueString = prerequisitesConfigSet.get(keyString).toString();
@@ -150,12 +158,11 @@ public class ConfigParser {
 						prerequisites.add(returnPrerequisiteData.prerequisite);
 					}
 					
-					// Log
-					log += "§f   - " + keyString + ": " + valueString + "\n";
-					log += "§4" + returnPrerequisiteData.errorLogString;
+					log.addInfo("   - " + keyString + ": " + valueString);
+					log.add(returnPrerequisiteData.log);
 				}
 			} else {
-				log += "§f - no prerequisites\n";
+				log.addInfo(" - no prerequisites");
 			}
 			
 			// Create trigger
@@ -165,18 +172,18 @@ public class ConfigParser {
 				triggerMap.put(triggerNameString, returnTriggerData.trigger);
 			}
 			
-			// Log
-			log += "§4" + returnTriggerData.errorLogString;
+			log.add(returnTriggerData.log);
 		}
 		
-		return log;
+		return triggerMap;
 	}
 
 	
-	private static String getRoles(ConfigurationSection rolesConfigSection, Map<String, Trigger> triggerMap, ScriptFactory scriptFactory, Map<String, Role> rolesMap) {
+	private static Map<String, Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, Map<String, Trigger> triggerMap, ScriptFactory scriptFactory) {
+		Map<String, Role> rolesMap = new HashMap<String, Role>();
 		Set<String> roleNameStrings = rolesConfigSection.getKeys(false);
-		// Log
-		String log = "§fFound " + roleNameStrings.size() + " roles\n";
+		
+		log.addInfo("Found " + roleNameStrings.size() + " roles");
 		
 		// Loop and resolve parent names
 		Map<String, List<String>> roleParentsMap = new HashMap<String, List<String>>();
@@ -207,7 +214,7 @@ public class ConfigParser {
 				if (!roleNameStrings.containsAll(parentNames)) {
 					Set<String> missingParentSet = new HashSet<String>(parentNames);
 					missingParentSet.removeAll(roleNameStrings);
-					log += "§4Role " + roleNameString + " has undefined parents: " + String.join(", ", missingParentSet) + "\n";
+					log.addError("Role " + roleNameString + " has undefined parents: " + String.join(", ", missingParentSet));
 					roleNameStrings.remove(roleNameString);
 					rolesToResolve.remove(i);
 					lastChanged++;
@@ -221,12 +228,12 @@ public class ConfigParser {
 
 				ConfigurationSection roleConfigSection = rolesConfigSection.getConfigurationSection(roleNameString);
 
-				log += "§fRole " + roleNameString + ":\n";
+				log.addInfo("Role " + roleNameString + ":");
 				
 				// Collect parents
 				Collection<Role> parentRoles = new LinkedList<Role>();
 				for (String parentName : parentNames) {
-					log += "§f - parent" + parentName + "\n";
+					log.addInfo(" - parent" + parentName);
 					parentRoles.add(rolesMap.get(parentName));
 				}
 				
@@ -242,17 +249,17 @@ public class ConfigParser {
 					ConfigurationSection scriptStringsConfigSection = roleConfigSection.getConfigurationSection("scripts");
 					Set<String> scriptNameStrings = scriptStringsConfigSection.getKeys(false);
 					
-					log += "§f - scripts:\n";
+					log.addInfo(" - scripts:");
 					
 					for (String scriptNameString : scriptNameStrings) {
 						if (!scriptStringsConfigSection.isString(scriptNameString)) {
-							log += "§4Script " + scriptNameString + " is not a string\n";
+							log.addError("Script " + scriptNameString + " is not a string");
 							continue;
 						}
 						
 						scriptStringsMap.put(scriptNameString, scriptStringsConfigSection.getString(scriptNameString));
 						
-						log += "§f   - " + scriptNameString + "\n";
+						log.addInfo("   - " + scriptNameString);
 					}
 				}
 				
@@ -267,12 +274,12 @@ public class ConfigParser {
 					ConfigurationSection roleTriggersConfigSection = roleConfigSection.getConfigurationSection("triggers");
 					Set<String> roleTriggerNameStrings = roleTriggersConfigSection.getKeys(false);
 					
-					log += "§f - triggers:\n";
+					log.addInfo(" - triggers:");
 					
 					for (String roleTriggerNameString : roleTriggerNameStrings) {
 						// Get trigger
 						if (!triggerMap.containsKey(roleTriggerNameString)) {
-							log += "§4Trigger " + roleTriggerNameString + " is not defined\n";
+							log.addError("Trigger " + roleTriggerNameString + " is not defined");
 							continue;
 						}
 						
@@ -281,31 +288,31 @@ public class ConfigParser {
 						// Get scripts
 						WeightedSet<String> roleTriggerScripts = new WeightedSet<String>();
 
-						log += "§f   - " + roleTriggerNameString + ":\n";
+						log.addInfo("   - " + roleTriggerNameString + ":");
 						
 						if (roleTriggersConfigSection.isString(roleTriggerNameString)) {
 							String scriptNameString = roleTriggersConfigSection.getString(roleTriggerNameString);
 							
 							if (!allScriptMap.containsKey(scriptNameString)) {
-								log += "§4Script " + scriptNameString + " is not defined\n";
+								log.addError("Script " + scriptNameString + " is not defined");
 								continue;
 							}
 							
-							log += "§f     Single script " + scriptNameString + "\n";
+							log.addInfo("     Single script " + scriptNameString);
 							
 							roleTriggerScripts.addEntry(scriptNameString, 1);
 						} else if (roleTriggersConfigSection.isList(roleTriggerNameString)) {
 							List<String> scriptNameStringList = roleTriggersConfigSection.getStringList(roleTriggerNameString);
 
-							log += "§f     Script List: \n";
+							log.addInfo("     Script List:");
 							
 							for (String scriptNameString : scriptNameStringList) {
 								if (!allScriptMap.containsKey(scriptNameString)) {
-									log += "§4Script " + scriptNameString + " is not defined\n";
+									log.addError("Script " + scriptNameString + " is not defined");
 									continue;
 								}
 								
-								log += "§f      - " + roleTriggerNameString + "\n";
+								log.addInfo("      - " + roleTriggerNameString);
 								
 								roleTriggerScripts.addEntry(scriptNameString, 1);
 							}
@@ -330,11 +337,11 @@ public class ConfigParser {
 			
 			// Check for dependency loops
 			if (lastChanged == 0) {
-				log += "§4Circular Role dependencies found with the following roles, unable to compile: " + String.join(", ", rolesToResolve);
+				log.addError("Circular Role dependencies found with the following roles, unable to compile: " + String.join(", ", rolesToResolve));
 				rolesToResolve.clear();
 			}
 		}
 		
-		return log;
+		return rolesMap;
 	}
 }

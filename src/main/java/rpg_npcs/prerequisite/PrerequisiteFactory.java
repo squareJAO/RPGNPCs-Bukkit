@@ -1,8 +1,10 @@
 package rpg_npcs.prerequisite;
 
+import rpg_npcs.ParseLog;
+
 public class PrerequisiteFactory {
 	public static class PrerequisiteFactoryReturnData {
-		public String errorLogString = "";
+		public ParseLog log = new ParseLog();
 		public Prerequisite prerequisite = null;
 	}
 	
@@ -15,11 +17,11 @@ public class PrerequisiteFactory {
 				double range = Double.parseDouble(value);
 				returnData.prerequisite = new RangePrerequisite(range);
 			} catch (NumberFormatException e) {
-				returnData.errorLogString = "Unrecognised number for Range: '" + value + "'";
+				returnData.log.addError("Unrecognised number for Range: '" + value + "'");
 			}
 			break;
 		default:
-			returnData.errorLogString = "Unrecognised prerequisite key: '" + key + "'";
+			returnData.log.addError("Unrecognised prerequisite key: '" + key + "'");
 			break;
 		}
 		

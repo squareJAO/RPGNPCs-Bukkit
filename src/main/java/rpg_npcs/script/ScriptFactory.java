@@ -51,7 +51,7 @@ public class ScriptFactory {
 		for (String lineID : instructions.keySet()) {
 			// Check a valid ID was given
 			if (state.doesScriptExist(lineID)) {
-				state.errors.add("Conversation ID " + lineID + " is used more than once");
+				state.log.addError("Conversation ID " + lineID + " is used more than once");
 				continue;
 			}
 
@@ -145,7 +145,7 @@ public class ScriptFactory {
 					
 					// Do what needs to be done with the returned data
 					if(data.heldData == HeldData.error) {
-						state.errors.add(data.errorText);
+						state.log.addError(data.errorText);
 					} else if(data.heldData == HeldData.node) {
 						workingNode.setNextNode(data.node);
 						
@@ -178,7 +178,7 @@ public class ScriptFactory {
 			if (state.BranchDone) {
 				// Check if it is the end of the instructions
 				if (characterIndex != instructionString.length() - 1) {
-					state.errors.add("Branch marked as done with a branching node, but there were more instructions: '" + instructionString.substring(characterIndex) + "'");
+					state.log.addError("Branch marked as done with a branching node, but there were more instructions: '" + instructionString.substring(characterIndex) + "'");
 				}
 				
 				return;

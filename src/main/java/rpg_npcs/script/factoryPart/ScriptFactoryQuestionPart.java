@@ -25,10 +25,10 @@ public class ScriptFactoryQuestionPart extends ScriptFactoryPart {
 			
 			// Check data validity
 			if (partStrings.length < 2) {
-				state.errors.add("Question " + optionString + " has less than 2 parts");
+				state.log.addError("Question " + optionString + " has less than 2 parts");
 				continue;
 			} else if (partStrings.length > 2) {
-				state.errors.add("Question " + optionString + " has more than 2 parts");
+				state.log.addError("Question " + optionString + " has more than 2 parts");
 				continue;
 			}
 			
@@ -37,7 +37,7 @@ public class ScriptFactoryQuestionPart extends ScriptFactoryPart {
 			
 			// Check valid
 			if (!state.doesScriptExist(idString)) {
-				state.errors.add("QuestionID " + idString + " isn't defined");
+				state.log.addError("QuestionID " + idString + " isn't defined");
 				continue;
 			}
 			

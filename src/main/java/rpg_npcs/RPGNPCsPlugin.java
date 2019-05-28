@@ -58,10 +58,8 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		buildScriptFactory();
 		
 		// Load all conversations
-		String conversationLog = reloadData();
-		for (String line : conversationLog.split("\n")) {
-			getLogger().info(line);
-		}
+		ParseLog log = reloadData();
+		getLogger().info(log.getFormattedString());
 		
 		// Add all custom traits
 		CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(RpgTrait.class).withName("Rpgnpc"));
@@ -84,7 +82,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		scriptFactory = new ScriptFactory(this, partsArray, 0.8, 20, "§7");
 	}
 
-	public String reloadData() {
+	public ParseLog reloadData() {
 		// Unregister old trigger listeners
 		for (Trigger trigger : triggers.values()) {
 			HandlerList.unregisterAll(trigger);
@@ -113,7 +111,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 			bindNpcTriggers(npc);
 		}
 		
-		return result.logString;
+		return result.log;
 	}
 	
 	public void registerRPGNPC(RpgTrait npc) {

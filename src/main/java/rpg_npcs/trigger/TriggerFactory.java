@@ -2,11 +2,12 @@ package rpg_npcs.trigger;
 
 import java.util.Collection;
 
+import rpg_npcs.ParseLog;
 import rpg_npcs.prerequisite.Prerequisite;
 
 public class TriggerFactory {
 	public static class TriggerFactoryReturnData {
-		public String errorLogString = "";
+		public ParseLog log = new ParseLog();
 		public Trigger trigger = null;
 	}
 	
@@ -18,7 +19,7 @@ public class TriggerFactory {
 			returnData.trigger = new MoveTrigger(prerequisites, priority);
 			break;
 		default:
-			returnData.errorLogString = "Unrecognised trigger type: '" + type + "'";
+			returnData.log.addError("Unrecognised trigger type: '" + type + "'");
 			break;
 		}
 		

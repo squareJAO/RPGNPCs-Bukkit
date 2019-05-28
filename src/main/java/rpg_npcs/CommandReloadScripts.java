@@ -28,9 +28,9 @@ public class CommandReloadScripts implements TabExecutor {
 		instance.saveConfig();
 		
 		// Regenerate the dialogue trees
-		String reloadLog = instance.reloadData();
+		ParseLog reloadLog = instance.reloadData();
 		
-		sender.sendMessage(reloadLog);
+		sender.sendMessage(reloadLog.getFormattedString());
 		sender.sendMessage("Reloaded.");
 		
 		return true;

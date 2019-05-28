@@ -1,7 +1,6 @@
 package rpg_npcs.script;
 
-import java.util.LinkedList;
-import java.util.List;
+import rpg_npcs.ParseLog;
 
 public class ScriptFactoryState {
 	public double TextSpeed;
@@ -10,14 +9,14 @@ public class ScriptFactoryState {
 	private ScriptMap allScripts;
 	private ScriptMap newScripts;
 	
-	public List<String> errors;
+	public ParseLog log;
 	
 	public ScriptFactoryState(double textSpeed, ScriptMap parentScripts) {
 		TextSpeed = textSpeed;
 		
 		allScripts = parentScripts;
 		newScripts = new ScriptMap();
-		errors = new LinkedList<String>();
+		log = new ParseLog();
 		
 		ResetBranchData();
 	}

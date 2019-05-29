@@ -72,13 +72,17 @@ public class WeightedSet <T extends Object> {
         return findEntryWithWeight(targetWeight);
     }
     
-    private T findEntryWithWeight(double targetWeight) {
+    public T findEntryWithWeight(double targetWeight) {
+    	// Special case for targetWeight == 0 as it would normally due to bounds select the -1st element
+    	if (targetWeight == 0 && size() > 0) {
+			return entries.get(0).object;
+		}
+    	
     	return findEntryWithWeight(targetWeight, 0, entries.size() - 1);
     }
     
     private T findEntryWithWeight(double targetWeight, int start, int end) {
     	// Binary search
-    	
     	if (start > end) {
 			return null;
 		}
@@ -87,7 +91,7 @@ public class WeightedSet <T extends Object> {
     	
     	int prevWeight = (middle - 1) < 0 ? 0 : entries.get(middle - 1).accumulatedWeight;
     	
-    	if (targetWeight < prevWeight) {
+    	if (targetWeight <= prevWeight) {
 			return findEntryWithWeight(targetWeight, start, middle - 1);
 		}
     	

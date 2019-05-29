@@ -33,6 +33,14 @@ public abstract class Trigger implements Listener {
 		npcScripts.remove(npc);
 	}
 	
+	public int getPriority() {
+		return priority;
+	}
+	
+	public Collection<Prerequisite> getPrerequisites() {
+		return prerequisites;
+	}
+	
 	protected void trigger(Player player, RpgTrait npc) {
 		if (arePrerequisitesMet(player, npc) && priority > npc.getConversationPriority()) {
 			WeightedSet<Script> scriptSet = npcScripts.get(npc);

@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.bukkit.Bukkit;
-
 public class WeightedSet <T extends Object> {
     private class Entry {
     	int accumulatedWeight;
@@ -48,10 +46,6 @@ public class WeightedSet <T extends Object> {
     	// Map entries
     	for (Entry entry : entries) {
     		Q newObject = map.get(entry.object);
-    		
-    		if (newObject == null) {
-    			Bukkit.getLogger().info("Mapping does not contain " + entry.object.toString());
-			}
     		
     		WeightedSet<Q>.Entry newEntry = newWeightedSet.new Entry();
     		newEntry.object = newObject;

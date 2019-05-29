@@ -22,6 +22,10 @@ public class Role {
 		this.scripts = scripts;
 	}
 	
+	public Map<Trigger, WeightedSet<String>> getTriggerMap() {
+		return triggerMap;
+	}
+	
 	/**
 	 * Gets all of the scripts contained within this role
 	 * @return The map of all of the scripts in this and all parent roles

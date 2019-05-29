@@ -36,6 +36,8 @@ public class ConfigParser {
 		}
 	}
 	
+	static final int[] WEIGHT_MAPPING = {100, 100, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+	
 	public static ConfigResult reloadConfig(ScriptFactory scriptFactory, Configuration config) {
 		/*
 		 * Config design
@@ -62,10 +64,12 @@ public class ConfigParser {
 		 *         - script1
 		 *         - script3
 		 *       eventName3:
-		 *         - name: script1
-		 *           weight: 10
-		 *         - name: script3
-		 *           weight: 5
+		 *         - script1: [weight1]
+		 *         - script2           <----- Weights calculated as remaining %age
+		 *         - script3
+		 *       eventName3:
+		 *         - script1: [weight1]
+		 *         - script3: [weight2]
 		 *     scripts:
 		 *       script1: "script"
 		 *       script2: "script" 
@@ -130,7 +134,7 @@ public class ConfigParser {
 			// Get priority
 			int priority = defaultEventPriority;
 			if (triggerConfigSection.contains("priority") && triggerConfigSection.isInt("priority")) {
-				priority = triggersConfigSection.getInt("priority");
+				priority = triggerConfigSection.getInt("priority");
 				
 				log.addInfo(" - priority: " + priority);
 			}
@@ -270,11 +274,11 @@ public class ConfigParser {
 				
 				// Generate Script Triggers
 				Map<Trigger, WeightedSet<String>> roleTriggerMap = new HashMap<Trigger, WeightedSet<String>>();
-				if (roleConfigSection.contains("triggers")) {
-					ConfigurationSection roleTriggersConfigSection = roleConfigSection.getConfigurationSection("triggers");
-					Set<String> roleTriggerNameStrings = roleTriggersConfigSection.getKeys(false);
+				if (roleConfigSection.contains("dialogues")) {
+					ConfigurationSection roleDialoguesConfigSection = roleConfigSection.getConfigurationSection("dialogues");
+					Set<String> roleTriggerNameStrings = roleDialoguesConfigSection.getKeys(false);
 					
-					log.addInfo(" - triggers:");
+					log.addInfo(" - dialogues:");
 					
 					for (String roleTriggerNameString : roleTriggerNameStrings) {
 						// Get trigger
@@ -284,39 +288,12 @@ public class ConfigParser {
 						}
 						
 						Trigger roleTrigger = triggerMap.get(roleTriggerNameString);
-						
-						// Get scripts
-						WeightedSet<String> roleTriggerScripts = new WeightedSet<String>();
 
 						log.addInfo("   - " + roleTriggerNameString + ":");
 						
-						if (roleTriggersConfigSection.isString(roleTriggerNameString)) {
-							String scriptNameString = roleTriggersConfigSection.getString(roleTriggerNameString);
-							
-							if (!allScriptMap.containsKey(scriptNameString)) {
-								log.addError("Script " + scriptNameString + " is not defined");
-								continue;
-							}
-							
-							log.addInfo("     Single script " + scriptNameString);
-							
-							roleTriggerScripts.addEntry(scriptNameString, 1);
-						} else if (roleTriggersConfigSection.isList(roleTriggerNameString)) {
-							List<String> scriptNameStringList = roleTriggersConfigSection.getStringList(roleTriggerNameString);
-
-							log.addInfo("     Script List:");
-							
-							for (String scriptNameString : scriptNameStringList) {
-								if (!allScriptMap.containsKey(scriptNameString)) {
-									log.addError("Script " + scriptNameString + " is not defined");
-									continue;
-								}
-								
-								log.addInfo("      - " + roleTriggerNameString);
-								
-								roleTriggerScripts.addEntry(scriptNameString, 1);
-							}
-						}
+						// Get scripts
+						WeightedSet<String> roleTriggerScripts = getDialogueScriptSet(log, roleDialoguesConfigSection, roleTriggerNameString, allScriptMap);
+						
 						
 						if (roleTriggerScripts.size() == 0) {
 							continue;
@@ -343,5 +320,109 @@ public class ConfigParser {
 		}
 		
 		return rolesMap;
+	}
+	
+	/**
+	 * Gets the names of the scripts defined under a trigger name in the dialogue section
+	 * @param log The current parse log
+	 * @param dialoguesConfig the section containing all dialogues
+	 * @param triggerName The name of the current dialogue
+	 * @param scriptMap All of the scripts visible in the role
+	 * @return A weighted set of all of the names of the scripts to bind to the event
+	 */
+	private static WeightedSet<String> getDialogueScriptSet(ParseLog log, ConfigurationSection dialoguesConfig, String triggerName, ScriptMap scriptMap) {
+		WeightedSet<String> roleTriggerScripts = new WeightedSet<String>();
+		
+		// A single string
+		if (dialoguesConfig.isString(triggerName)) {
+			String scriptNameString = dialoguesConfig.getString(triggerName);
+			
+			if (!scriptMap.containsKey(scriptNameString)) {
+				log.addError("Script " + scriptNameString + " is not defined");
+				return roleTriggerScripts;
+			}
+			
+			log.addInfo("     Single script " + scriptNameString);
+			
+			roleTriggerScripts.addEntry(scriptNameString, 1);
+			
+	    // A list of scripts
+		} else if (dialoguesConfig.isList(triggerName)) {
+			log.addInfo("     Script List:");
+			
+			int totalWeight = 0;
+			
+			// Get scripts with weights
+			List<Map<?, ?>> weightedScriptNames = dialoguesConfig.getMapList(triggerName);
+			
+			for (Map<?, ?> mapGeneric : weightedScriptNames) {
+				for (Object key : mapGeneric.keySet()) {
+					// Get script name
+					String scriptName = key.toString();
+					
+					if (!scriptMap.containsKey(scriptName)) {
+						log.addError("Script " + scriptName + " is not defined");
+						continue;
+					}
+					
+					// Get weight
+					Object valueObject = mapGeneric.get(key);
+					String valueString = valueObject.toString();
+					int weight;
+					try {
+						weight = Integer.valueOf(valueString);
+					} catch (NumberFormatException e) {
+						log.addError("Cannot parse weight number from given value: '" + valueString + "'");
+						continue;
+					}
+					
+					if (weight <= 0) {
+						log.addError("Given weight is less than 1: " + weight);
+						continue;
+					}
+					
+					log.addInfo("      - " + scriptName + ", weight: " + weight);
+					
+					roleTriggerScripts.addEntry(scriptName, weight);
+					totalWeight += weight;
+				}
+			}
+			
+			// Get scripts without weights
+			List<String> unweightedScriptNames = dialoguesConfig.getStringList(triggerName);
+
+			if (unweightedScriptNames.size() > 0) {
+				// Calculate the weights of the unweighted scripts
+				int uniformWeights;
+				if (totalWeight == 0) {
+					uniformWeights = 1;
+				} else {
+					double sigFigsDouble = Math.log10(totalWeight);
+					int sigFigs = (int)Math.floor(sigFigsDouble) + 1;
+					int outOf = WEIGHT_MAPPING[sigFigs];
+					int remaining = outOf - totalWeight;
+					uniformWeights = remaining / unweightedScriptNames.size();
+				}
+				
+				for (String scriptNameString : unweightedScriptNames) {
+					if (!scriptMap.containsKey(scriptNameString)) {
+						log.addError("Script " + scriptNameString + " is not defined");
+						continue;
+					}
+	
+					if (totalWeight == 0) {
+						log.addInfo("      - " + scriptNameString);
+					} else {
+						log.addInfo("      - " + scriptNameString + ", weight: " + uniformWeights);
+					}
+					
+					roleTriggerScripts.addEntry(scriptNameString, uniformWeights);
+				}
+			}
+		} else {
+			log.addError("Unsupported dialogue config type");
+		}
+		
+		return roleTriggerScripts;
 	}
 }

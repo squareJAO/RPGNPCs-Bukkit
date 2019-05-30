@@ -1,6 +1,9 @@
 package rpg_npcs.script;
 
 import java.util.Map;
+import java.util.Map.Entry;
+
+import org.bukkit.Bukkit;
 
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
@@ -93,6 +96,7 @@ public class ScriptFactory {
 		ScriptFactoryPart currentPart = null; // The current factory for the current text being eaten. If null then eating speech
 		boolean escaping = false;
 		
+		
 		for (int characterIndex = 0; characterIndex < instructionString.length(); characterIndex++) {
 			char currentCharacter = instructionString.charAt(characterIndex);
 
@@ -180,6 +184,11 @@ public class ScriptFactory {
 			
 			// Stop escaping if were escaping
 			escaping = false;
+		}
+		
+		// Check if there are more characters to eat
+		if (currentEatenString.length() != 0) {
+			workingNode = AddSpeechNode(workingNode, state, currentEatenString);
 		}
 	}
 }

@@ -1,9 +1,6 @@
 package rpg_npcs.script;
 
 import java.util.Map;
-import java.util.Map.Entry;
-
-import org.bukkit.Bukkit;
 
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
@@ -46,30 +43,15 @@ public class ScriptFactory {
 		
 		// Populate state with skeleton data
 		for (String lineID : instructions.keySet()) {
-			// Check a valid ID was given
-			if (state.doesScriptExist(lineID)) {
-				state.log.addError("Conversation ID " + lineID + " is used more than once");
-				continue;
-			}
-
 			// Start each instruction path with a clear node
-			Script rootScript = new Script(lineID, new ScriptClearNode());
+			ScriptLinearNode baseNode = new ScriptClearNode();
 			
-			// Populate hashmaps
-			state.addScript(rootScript);
-		}
-		
-		// Populate each branch
-		for (String lineID : instructions.keySet()) {
-			// If a conversation doesn't exist then it wasn't valid in the loop above
-			if(!state.doesScriptExist(lineID)) {
-				continue;
-			}
-			
-			Script rootScript = state.getScript(lineID);
-			ScriptLinearNode baseNode = rootScript.initialNode;
 			String spokenTextString = instructions.get(lineID);
 			PopulateBranch(baseNode, spokenTextString, state);
+			
+			// Add to state
+			Script rootScript = new Script(lineID, baseNode);
+			state.addScript(rootScript);
 			
 			state.ResetBranchData();
 		}
@@ -186,9 +168,7 @@ public class ScriptFactory {
 			escaping = false;
 		}
 		
-		// Check if there are more characters to eat
-		if (currentEatenString.length() != 0) {
-			workingNode = AddSpeechNode(workingNode, state, currentEatenString);
-		}
+		// Add the remaining string as a text node
+		AddSpeechNode(workingNode, state, currentEatenString);
 	}
 }

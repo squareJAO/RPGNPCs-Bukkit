@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
-import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.citizensnpcs.api.CitizensAPI;
@@ -19,10 +18,8 @@ import rpg_npcs.script.factoryPart.ScriptFactoryPausePart;
 import rpg_npcs.script.factoryPart.ScriptFactoryQuestionPart;
 import rpg_npcs.script.factoryPart.ScriptFactorySpeedPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryStatePart;
-import rpg_npcs.trigger.Trigger;
 
 public class RPGNPCsPlugin extends JavaPlugin {
-	public Map<String, Trigger> triggers = new HashMap<String, Trigger>();
 	public Map<String, Role> roles = new HashMap<String, Role>();
 
 	protected ScriptFactory scriptFactory;
@@ -86,8 +83,8 @@ public class RPGNPCsPlugin extends JavaPlugin {
 
 	public ParseLog reloadData() {
 		// Unregister old trigger listeners
-		for (Trigger trigger : triggers.values()) {
-			HandlerList.unregisterAll(trigger);
+		for (Role role : roles.values()) {
+			role.unregisterTriggerListeners(this);
 		}
 		
 		// Unregister npcs
@@ -98,12 +95,11 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		
 		// Set new data
 		ConfigParser.ConfigResult result = ConfigParser.reloadConfig(scriptFactory, getConfig());
-		triggers = result.triggerMap;
 		roles = result.rolesMap;
 		
 		// Register trigger listeners
-		for (Trigger trigger : triggers.values()) {
-			Bukkit.getPluginManager().registerEvents(trigger, this);
+		for (Role role : roles.values()) {
+			role.registerTriggerListeners(this);
 		}
 		
 		// Register npcs

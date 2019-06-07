@@ -16,8 +16,6 @@ import org.bukkit.configuration.MemoryConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
-
 import rpg_npcs.ConfigParser;
 import rpg_npcs.DialogueMap;
 import rpg_npcs.Role;
@@ -354,19 +352,19 @@ public class ConfigParserTest {
 		 * trigger1 -> script1
 		 * 
 		 * a:
+		 * script2: ""
 		 * trigger2: playermove
 		 * trigger2 -> script1 (2)
 		 * 
 		 * b:
-		 * script1: "" (1)
-		 * script2: ""
+		 * script2: "" (1)
 		 * trigger1 -> script2 (3)
 		 * trigger2 -> script2 (4)
 		 * 
 		 * c: (6)
 		 * 
 		 * d:
-		 * trigger2 -> a.script1 (5)
+		 * trigger2 -> a.script2 (5)
 		 * 
 		 * Sub Tests:
 		 * 1. script overriding
@@ -394,21 +392,23 @@ public class ConfigParserTest {
 		ConfigurationSection roleConfigurationSectionA = rolesConfigurationSection.createSection("a");
 		ConfigurationSection roleConfigurationSectionB = rolesConfigurationSection.createSection("b");
 		ConfigurationSection roleConfigurationSectionC = rolesConfigurationSection.createSection("c");
-		ConfigurationSection roleConfigurationSectionD = rolesConfigurationSection.createSection("c");
+		ConfigurationSection roleConfigurationSectionD = rolesConfigurationSection.createSection("d");
 
 		// A
 		ConfigurationSection triggersConfigurationSectionA = roleConfigurationSectionA.createSection("triggers");
 		ConfigurationSection trigger2ConfigurationSection = triggersConfigurationSectionA.createSection("trigger2");
 		trigger2ConfigurationSection.set("type", "playermove");
 		
+		ConfigurationSection scriptsConfigurationSectionA = roleConfigurationSectionA.createSection("scripts");
+		scriptsConfigurationSectionA.set("script2", "");
+		
 		ConfigurationSection dialoguesConfigurationSectionA = roleConfigurationSectionA.createSection("dialogues");
-		dialoguesConfigurationSectionA.set("trigger1", "script1");
+		dialoguesConfigurationSectionA.set("trigger2", "script1");
 
 		// B
 		roleConfigurationSectionB.set("parents", Arrays.asList(new String[] {"a"}));
 		
 		ConfigurationSection scriptsConfigurationSectionB = roleConfigurationSectionB.createSection("scripts");
-		scriptsConfigurationSectionB.set("script1", "");
 		scriptsConfigurationSectionB.set("script2", "");
 		
 		ConfigurationSection dialoguesConfigurationSectionb = roleConfigurationSectionB.createSection("dialogues");
@@ -422,7 +422,7 @@ public class ConfigParserTest {
 		roleConfigurationSectionD.set("parents", Arrays.asList(new String[] {"b"}));
 		
 		ConfigurationSection dialoguesConfigurationSectiond = roleConfigurationSectionD.createSection("dialogues");
-		dialoguesConfigurationSectiond.set("trigger2", "a.script1");
+		dialoguesConfigurationSectiond.set("trigger2", "a.script2");
 		
 		
 		// Generate result
@@ -438,7 +438,7 @@ public class ConfigParserTest {
 		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
 		
 		// 1
-		assertNotSame(baseRole.getAllScripts().get("script1"), roleB.getAllScripts().get("script1"));
+		assertNotSame(roleA.getAllScripts().get("script2"), roleB.getAllScripts().get("script2"));
 		
 		// 2
 		Trigger roleATrigger2 = roleA.getAllVisibleTriggers().get("trigger2");
@@ -454,10 +454,11 @@ public class ConfigParserTest {
 		
 		// 5
 		Trigger roleDTrigger2 = roleD.getAllVisibleTriggers().get("trigger2");
-		assertSame(baseRole.getAllScripts().get("script1"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
+		assertSame(roleA.getAllScripts().get("script2"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
+		assertNotSame(roleB.getAllScripts().get("script2"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
 		
 		// 6
-		assertTrue(baseRole.getAllScripts().equals(roleC.getAllScripts()));
+		assertTrue(roleA.getAllScripts().equals(roleC.getAllScripts()));
 		assertSame(baseRole.getAllVisibleTriggers().get("trigger1"), roleC.getAllVisibleTriggers().get("trigger1"));
 	}
 }

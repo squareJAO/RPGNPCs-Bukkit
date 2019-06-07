@@ -71,10 +71,17 @@ public class Role {
 	}
 
 	/**
-	 * @return the mapping of triggers to scripts
+	 * @return the mapping of triggers to scripts defined by this role
+	 */
+	public Map<Trigger, WeightedSet<Script>> getLocalDialogueMap() {
+		return dialogueMap.zip(triggers, scripts);
+	}
+
+	/**
+	 * @return the mapping of triggers to scripts visible by this role
 	 */
 	public Map<Trigger, WeightedSet<Script>> getDialogueMap() {
-		return dialogueMap.zip(triggers, scripts);
+		return dialogueMap.zip(getAllVisibleTriggers(), getAllScripts());
 	}
 	
 	/**

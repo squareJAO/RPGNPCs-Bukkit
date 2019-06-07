@@ -119,73 +119,6 @@ public class ConfigParser {
 		return new ConfigResult(log, rolesMap);
 	}
 	
-	private static TriggerMap getTriggers(ParseLog log, ConfigurationSection triggersConfigSection, int defaultEventPriority) {
-		TriggerMap triggerMap = new TriggerMap();
-		Set<String> triggerNameStrings = triggersConfigSection.getKeys(false);
-		
-		log.addInfo("Found " + triggerNameStrings.size() + " triggers");
-		
-		// Loop and resolve
-		for (String triggerNameString : triggerNameStrings) {
-			ConfigurationSection triggerConfigSection = triggersConfigSection.getConfigurationSection(triggerNameString);
-			
-			log.addInfo("Trigger " + triggerNameString + ":");
-			
-			// Get type
-			if (!triggerConfigSection.contains("type")) {
-				log.addError("Trigger " + triggerNameString + " does not have a type");
-				continue;
-			}
-			if (!triggerConfigSection.isString("type")) {
-				log.addError("Trigger " + triggerNameString + "'s type is not a string");
-				continue;
-			}
-			String typeString = triggerConfigSection.getString("type");
-			log.addInfo(" - type: " + typeString);
-			
-			// Get priority
-			int priority = defaultEventPriority;
-			if (triggerConfigSection.contains("priority") && triggerConfigSection.isInt("priority")) {
-				if (!triggerConfigSection.isInt("priority")) {
-					log.addError("Trigger " + triggerNameString + " priority is not an int");
-					continue;
-				}
-				
-				priority = triggerConfigSection.getInt("priority");
-				
-				log.addInfo(" - priority: " + priority);
-			}
-			
-			// Check if any prerequisites exist
-			Set<Prerequisite> prerequisites;
-			if (triggerConfigSection.contains("prerequisites")) {
-				if (!triggerConfigSection.isConfigurationSection("prerequisites")) {
-					// If prerequisites are badly formatted then skip this trigger
-					log.addError("Trigger " + triggerNameString + " prerequisites are in an unrecognised format");
-					continue;
-				}
-				
-				ConfigurationSection prerequisiteConfigSection = triggerConfigSection.getConfigurationSection("prerequisites");
-				
-				prerequisites = getPrerequisites(log, prerequisiteConfigSection);
-			} else {
-				prerequisites = new HashSet<Prerequisite>();
-				log.addInfo(" - no prerequisites");
-			}
-			
-			// Create trigger
-			TriggerFactoryReturnData returnTriggerData = TriggerFactory.createTrigger(typeString, prerequisites, priority);
-			
-			if (returnTriggerData.trigger != null) {
-				triggerMap.put(triggerNameString, returnTriggerData.trigger);
-			}
-			
-			log.add(returnTriggerData.log);
-		}
-		
-		return triggerMap;
-	}
-	
 	private static Set<Prerequisite> getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
 		Set<Prerequisite> prerequisites = new HashSet<Prerequisite>();
 		
@@ -269,11 +202,11 @@ public class ConfigParser {
 				}
 				
 				// Gather parent scripts & triggers
-				TriggerMap triggers = new TriggerMap();
+				TriggerMap allTriggersMap = new TriggerMap();
 				ScriptMap allScriptsMap = new ScriptMap();
 				for (Role role : parentRoles) {
 					allScriptsMap.putAll(role.getAllScripts());
-					triggers.putAll(role.getAllVisibleTriggers());
+					allTriggersMap.putAll(role.getAllVisibleTriggers());
 				}
 				
 				// Gather script commands
@@ -285,28 +218,21 @@ public class ConfigParser {
 				allScriptsMap.putAll(roleScriptMap);
 				
 				// Generate role defined triggers
+				TriggerMap roleTriggersMap = new TriggerMap(); 
 				if (roleConfigSection.isConfigurationSection("triggers")) {
 					ConfigurationSection triggersConfigSection = roleConfigSection.getConfigurationSection("triggers");
-					TriggerMap newTriggersMap = getTriggers(log, triggersConfigSection, defaultEventPriority);
-					
-					Set<String> newTriggerNameSet = newTriggersMap.keySet();
-					newTriggerNameSet.retainAll(triggers.keySet());
-					for (String string : newTriggerNameSet) {
-						log.addError("Trigger " + string + " is already defined");
-						newTriggersMap.remove(string);
-					}
-					
-					triggers.putAll(newTriggersMap);
+					roleTriggersMap = getTriggers(log, triggersConfigSection, defaultEventPriority);
 				}
+				allTriggersMap.putAll(roleTriggersMap);
 				
 				// Generate Dialogues
 				DialogueMap dialogueMap = new DialogueMap();
 				if (roleConfigSection.isConfigurationSection("dialogues")) {
 					ConfigurationSection roleDialoguesConfigSection = roleConfigSection.getConfigurationSection("dialogues");
-					dialogueMap = getDialogues(log, roleDialoguesConfigSection, triggers, allScriptsMap);
+					dialogueMap = getDialogues(log, roleDialoguesConfigSection, allTriggersMap, allScriptsMap);
 				}
 				
-				Role newRole = new Role(roleNameString, triggers, parentRoles, dialogueMap, roleScriptMap);
+				Role newRole = new Role(roleNameString, roleTriggersMap, parentRoles, dialogueMap, roleScriptMap);
 				
 				rolesMap.put(newRole);
 				
@@ -345,6 +271,73 @@ public class ConfigParser {
 		// Generate role specific scripts
 		ScriptFactoryState state = scriptFactory.createConversationTree(scriptStringsMap, allScriptsMap);
 		return state.getNewScripts();
+	}
+	
+	private static TriggerMap getTriggers(ParseLog log, ConfigurationSection triggersConfigSection, int defaultEventPriority) {
+		TriggerMap triggerMap = new TriggerMap();
+		Set<String> triggerNameStrings = triggersConfigSection.getKeys(false);
+		
+		log.addInfo("Found " + triggerNameStrings.size() + " triggers");
+		
+		// Loop and resolve
+		for (String triggerNameString : triggerNameStrings) {
+			ConfigurationSection triggerConfigSection = triggersConfigSection.getConfigurationSection(triggerNameString);
+			
+			log.addInfo("Trigger " + triggerNameString + ":");
+			
+			// Get type
+			if (!triggerConfigSection.contains("type")) {
+				log.addError("Trigger " + triggerNameString + " does not have a type");
+				continue;
+			}
+			if (!triggerConfigSection.isString("type")) {
+				log.addError("Trigger " + triggerNameString + "'s type is not a string");
+				continue;
+			}
+			String typeString = triggerConfigSection.getString("type");
+			log.addInfo(" - type: " + typeString);
+			
+			// Get priority
+			int priority = defaultEventPriority;
+			if (triggerConfigSection.contains("priority") && triggerConfigSection.isInt("priority")) {
+				if (!triggerConfigSection.isInt("priority")) {
+					log.addError("Trigger " + triggerNameString + " priority is not an int");
+					continue;
+				}
+				
+				priority = triggerConfigSection.getInt("priority");
+				
+				log.addInfo(" - priority: " + priority);
+			}
+			
+			// Check if any prerequisites exist
+			Set<Prerequisite> prerequisites;
+			if (triggerConfigSection.contains("prerequisites")) {
+				if (!triggerConfigSection.isConfigurationSection("prerequisites")) {
+					// If prerequisites are badly formatted then skip this trigger
+					log.addError("Trigger " + triggerNameString + " prerequisites are in an unrecognised format");
+					continue;
+				}
+				
+				ConfigurationSection prerequisiteConfigSection = triggerConfigSection.getConfigurationSection("prerequisites");
+				
+				prerequisites = getPrerequisites(log, prerequisiteConfigSection);
+			} else {
+				prerequisites = new HashSet<Prerequisite>();
+				log.addInfo(" - no prerequisites");
+			}
+			
+			// Create trigger
+			TriggerFactoryReturnData returnTriggerData = TriggerFactory.createTrigger(typeString, prerequisites, priority);
+			
+			if (returnTriggerData.trigger != null) {
+				triggerMap.put(triggerNameString, returnTriggerData.trigger);
+			}
+			
+			log.add(returnTriggerData.log);
+		}
+		
+		return triggerMap;
 	}
 	
 	private static DialogueMap getDialogues(ParseLog log, ConfigurationSection roleDialoguesConfigSection, TriggerMap triggers, ScriptMap allScriptMap) {

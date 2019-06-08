@@ -2,6 +2,7 @@ package rpg_npcs.script;
 
 import java.util.Map;
 
+import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 import rpg_npcs.script.node.ScriptClearNode;
@@ -21,7 +22,7 @@ public class ScriptFactory {
 		this.factoryParts = factoryParts;
 	}
 	
-	public ScriptFactoryState createConversationTree(Map<String, String> instructions, ScriptMap parentScriptsMap) {
+	public ScriptFactoryState createConversationTree(Map<String, String> instructions, RolePropertyMap<Script> parentScriptsMap) {
 		/* These Instructions are outdated due to modular system but still give a good outline of the intended functionality of the system
 		 * 
 		 * Each item in the instructions is an id and a path. The first string is the id of that path

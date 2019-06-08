@@ -1,4 +1,4 @@
-package rpg_npcs;
+package rpg_npcs.role;
 
 import java.util.Map;
 import java.util.Set;
@@ -9,22 +9,23 @@ import org.bukkit.plugin.Plugin;
 
 import com.sun.istack.internal.NotNull;
 
+import rpg_npcs.DialogueMapping;
+import rpg_npcs.RpgTrait;
+import rpg_npcs.WeightedSet;
 import rpg_npcs.script.Script;
-import rpg_npcs.script.ScriptMap;
 import rpg_npcs.trigger.Trigger;
 
-public class Role {
-	public final String roleName;
-	private final TriggerMap triggers;
+public class Role extends RoleNamedProperty {
+	private final RolePropertyMap<Trigger> triggers;
 	private final Set<Role> parentRoles;
-	private final DialogueMap dialogueMap;
-	private final ScriptMap scripts;
+	private final DialogueMapping dialogueMap;
+	private final RolePropertyMap<Script> scripts;
 	
 	public static final String DEFAULT_ROLE_NAME_STRING = "Base Role";
 	
-	public Role(String roleName, @NotNull TriggerMap triggers, @NotNull Set<Role> parentRoles,
-			@NotNull DialogueMap dialogueMap, @NotNull ScriptMap scripts) {
-		this.roleName = roleName;
+	public Role(String roleName, @NotNull RolePropertyMap<Trigger> triggers, @NotNull Set<Role> parentRoles,
+			@NotNull DialogueMapping dialogueMap, @NotNull RolePropertyMap<Script> scripts) {
+		super(roleName);
 		this.triggers = triggers;
 		this.parentRoles = parentRoles;
 		this.dialogueMap = dialogueMap;
@@ -32,16 +33,39 @@ public class Role {
 	}
 	
 	/**
-	 * @return a set of all of the triggers visible to this role
+	 * @return The map of all of the scripts in this and all parent roles
 	 */
-	public TriggerMap getAllVisibleTriggers() {
-		TriggerMap allTriggers = triggers.copy();
-		
+	public RolePropertyMap<Script> getAllVisibleScripts() {
+		RolePropertyMap<Script> results = new RolePropertyMap<Script>();
+
+		// Recursively copy parent scripts
 		for (Role role : getImmediateParentRoles()) {
-			allTriggers.putAll(role.getAllVisibleTriggers());
+			results.putAll(role.getAllVisibleScripts());
 		}
 		
-		return allTriggers;
+		// Put this's scripts in
+		results.putAll(this.scripts, "");
+		results.putAll(this.scripts, this.nameString + ".");
+		
+		return results;
+	}
+	
+	/**
+	 * @return a set of all of the triggers visible to this role
+	 */
+	public RolePropertyMap<Trigger> getAllVisibleTriggers() {
+		RolePropertyMap<Trigger> results = new RolePropertyMap<Trigger>();
+
+		// Recursively copy parent triggers
+		for (Role role : getImmediateParentRoles()) {
+			results.putAll(role.getAllVisibleTriggers());
+		}
+		
+		// Put this's triggers in
+		results.putAll(this.triggers, "");
+		results.putAll(this.triggers, this.nameString + ".");
+		
+		return results;
 	}
 	
 	public void registerTriggerListeners(Plugin plugin) {
@@ -66,7 +90,7 @@ public class Role {
 	/**
 	 * @return the mapping of trigger names to script names
 	 */
-	public DialogueMap getDialogueNamesMap() {
+	public DialogueMapping getDialogueNamesMap() {
 		return dialogueMap;
 	}
 
@@ -81,34 +105,7 @@ public class Role {
 	 * @return the mapping of triggers to scripts visible by this role
 	 */
 	public Map<Trigger, WeightedSet<Script>> getDialogueMap() {
-		return dialogueMap.zip(getAllVisibleTriggers(), getAllScripts());
-	}
-	
-	/**
-	 * Gets all of the scripts contained within this role
-	 * @return The map of all of the scripts in this and all parent roles
-	 */
-	public ScriptMap getAllScripts() {
-		ScriptMap results = new ScriptMap();
-		
-		putAllScriptsInMap(results);
-		
-		return results;
-	}
-
-	/**
-	 * Gets all of the scripts contained within this role
-	 * @param results the map to place the results in
-	 */
-	private void putAllScriptsInMap(ScriptMap results) {
-		// Recursively copy parent scripts
-		for (Role role : getImmediateParentRoles()) {
-			role.putAllScriptsInMap(results);
-		}
-		
-		// Copy scripts
-		results.putAll(scripts, "");
-		results.putAll(scripts, roleName + ".");
+		return dialogueMap.zip(getAllVisibleTriggers(), getAllVisibleScripts());
 	}
 	
 	public void registerNpc(RpgTrait npc) {

@@ -4,15 +4,16 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import rpg_npcs.TriggerMap;
+import rpg_npcs.role.RolePropertyMap;
+import rpg_npcs.trigger.Trigger;
 
-public class TriggerMapTest {
+public class PropertyMapTest {
 
 	@Test
 	public void copyTest() {
-		TriggerMap map1 = new TriggerMap();
+		RolePropertyMap<Trigger> map1 = new RolePropertyMap<Trigger>();
 		map1.put("trigger1", null);
-		TriggerMap map2 = map1.copy();
+		RolePropertyMap<Trigger> map2 = map1.copy();
 		map2.put("trigger2", null);
 		
 		assertTrue(map1.containsKey("trigger1"));

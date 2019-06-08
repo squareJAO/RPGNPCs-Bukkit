@@ -11,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.trait.TraitInfo;
+import rpg_npcs.role.Role;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.factoryPart.ScriptFactoryCommandPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;

@@ -17,12 +17,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import rpg_npcs.ConfigParser;
-import rpg_npcs.DialogueMap;
-import rpg_npcs.Role;
-import rpg_npcs.TriggerMap;
+import rpg_npcs.DialogueMapping;
 import rpg_npcs.WeightedSet;
 import rpg_npcs.ConfigParser.ConfigResult;
-import rpg_npcs.script.ScriptMap;
+import rpg_npcs.role.Role;
+import rpg_npcs.role.RolePropertyMap;
+import rpg_npcs.script.Script;
 import rpg_npcs.trigger.Trigger;
 
 public class ConfigParserTest {
@@ -39,8 +39,8 @@ public class ConfigParserTest {
 		
 		Role baseRole = result.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
 		
-		assertEquals(Role.DEFAULT_ROLE_NAME_STRING, baseRole.roleName);
-		assertEquals(0, baseRole.getAllScripts().size());
+		assertEquals(Role.DEFAULT_ROLE_NAME_STRING, baseRole.nameString);
+		assertEquals(0, baseRole.getAllVisibleScripts().size());
 		assertEquals(0, baseRole.getImmediateParentRoles().size());
 		assertEquals(0, baseRole.getDialogueNamesMap().size());
 		assertEquals(0, baseRole.getAllVisibleTriggers().size());
@@ -94,12 +94,12 @@ public class ConfigParserTest {
 			for (int i = 0; i < roles; i++) {
 				String roleNameString = roleNames.get(i);
 				Role role = result.rolesMap.get(roleNameString);
-				ScriptMap roleScriptsMap = role.getAllScripts();
+				RolePropertyMap<Script> roleScriptsMap = role.getAllVisibleScripts();
 				Set<String> roleScriptSet = roleScriptSets.get(i);
 
 				assertEquals(1, role.getImmediateParentRoles().size());
 				assertEquals(0, role.getAllVisibleTriggers().size());
-				assertEquals(roleNameString, role.roleName);
+				assertEquals(roleNameString, role.nameString);
 				assertEquals(2 * roleScriptSet.size(), roleScriptsMap.size());
 				
 				for (String scriptName : roleScriptSet) {
@@ -155,9 +155,9 @@ public class ConfigParserTest {
 		assertEquals(1, result.rolesMap.size());
 		
 		Role baseRole = result.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
-		TriggerMap triggerMap = baseRole.getAllVisibleTriggers();
+		RolePropertyMap<Trigger> triggerMap = baseRole.getAllVisibleTriggers();
 		
-		assertEquals(triggerCount, triggerMap.size());
+		assertEquals(triggerCount * 2, triggerMap.size());
 
 		assertTrue(triggerMap.keySet().containsAll(triggerNameSet));
 
@@ -248,7 +248,7 @@ public class ConfigParserTest {
 		
 		// Extract data
 		roleDialoguesBaseRole = roleDialoguesResult.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
-		DialogueMap dialogueMap = roleDialoguesBaseRole.getDialogueNamesMap();
+		DialogueMapping dialogueMap = roleDialoguesBaseRole.getDialogueNamesMap();
 		
 		roleDialoguesSets = new ArrayList<WeightedSet<String>>(roleDialoguesTriggerCount);
 		for (int i = 0; i < roleDialoguesTriggerCount; i++) {
@@ -341,8 +341,8 @@ public class ConfigParserTest {
 		 *    base
 		 *      |
 		 *      a
-		 *     / \
-		 *    b   c
+		 *     /|\
+		 *    b e c
 		 *    |
 		 *    d
 		 * 
@@ -366,13 +366,17 @@ public class ConfigParserTest {
 		 * d:
 		 * trigger2 -> a.script2 (5)
 		 * 
+		 * e:
+		 * trigger2: playermove
+		 * 
 		 * Sub Tests:
 		 * 1. script overriding
 		 * 2. inherited script referencing
 		 * 3. inherited trigger referencing
 		 * 4: dialogue overriding
-		 * 5: namespaces
+		 * 5: script namespaces
 		 * 6: multi-depth inheritance
+		 * 7: trigger namespaces
 		 */
 		
 		Configuration testConfigurationSection = new MemoryConfiguration();
@@ -393,6 +397,7 @@ public class ConfigParserTest {
 		ConfigurationSection roleConfigurationSectionB = rolesConfigurationSection.createSection("b");
 		ConfigurationSection roleConfigurationSectionC = rolesConfigurationSection.createSection("c");
 		ConfigurationSection roleConfigurationSectionD = rolesConfigurationSection.createSection("d");
+		ConfigurationSection roleConfigurationSectionE = rolesConfigurationSection.createSection("e");
 
 		// A
 		ConfigurationSection triggersConfigurationSectionA = roleConfigurationSectionA.createSection("triggers");
@@ -424,6 +429,13 @@ public class ConfigParserTest {
 		ConfigurationSection dialoguesConfigurationSectiond = roleConfigurationSectionD.createSection("dialogues");
 		dialoguesConfigurationSectiond.set("trigger2", "a.script2");
 		
+		// E
+		roleConfigurationSectionE.set("parents", Arrays.asList(new String[] {"a"}));
+		
+		ConfigurationSection triggersConfigurationSectionE = roleConfigurationSectionE.createSection("triggers");
+		ConfigurationSection trigger2ConfigurationSection2 = triggersConfigurationSectionE.createSection("trigger2");
+		trigger2ConfigurationSection2.set("type", "playermove");
+		
 		
 		// Generate result
 		ConfigResult result = ConfigParser.reloadConfig(ScriptFactoryTest.getTestableEmptyScriptFactory(), testConfigurationSection);
@@ -433,32 +445,37 @@ public class ConfigParserTest {
 		Role roleB = result.rolesMap.get("b");
 		Role roleC = result.rolesMap.get("c");
 		Role roleD = result.rolesMap.get("d");
+		Role roleE = result.rolesMap.get("e");
 		
 		// Test
 		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
 		
 		// 1
-		assertNotSame(roleA.getAllScripts().get("script2"), roleB.getAllScripts().get("script2"));
+		assertNotSame(roleA.getAllVisibleScripts().get("script2"), roleB.getAllVisibleScripts().get("script2"));
 		
 		// 2
 		Trigger roleATrigger2 = roleA.getAllVisibleTriggers().get("trigger2");
-		assertSame(baseRole.getAllScripts().get("script1"), roleA.getDialogueMap().get(roleATrigger2).findEntryWithWeight(0));
+		assertSame(baseRole.getAllVisibleScripts().get("script1"), roleA.getDialogueMap().get(roleATrigger2).findEntryWithWeight(0));
 		
 		// 3
 		Trigger roleBTrigger1 = roleB.getAllVisibleTriggers().get("trigger1");
-		assertSame(roleB.getAllScripts().get("script2"), roleB.getDialogueMap().get(roleBTrigger1).findEntryWithWeight(0));
+		assertSame(roleB.getAllVisibleScripts().get("script2"), roleB.getDialogueMap().get(roleBTrigger1).findEntryWithWeight(0));
 		
 		// 4
 		Trigger roleBTrigger2 = roleB.getAllVisibleTriggers().get("trigger2");
-		assertSame(roleB.getAllScripts().get("script2"), roleB.getDialogueMap().get(roleBTrigger2).findEntryWithWeight(0));
+		assertSame(roleB.getAllVisibleScripts().get("script2"), roleB.getDialogueMap().get(roleBTrigger2).findEntryWithWeight(0));
 		
 		// 5
 		Trigger roleDTrigger2 = roleD.getAllVisibleTriggers().get("trigger2");
-		assertSame(roleA.getAllScripts().get("script2"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
-		assertNotSame(roleB.getAllScripts().get("script2"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
+		assertSame(roleA.getAllVisibleScripts().get("script2"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
+		assertNotSame(roleB.getAllVisibleScripts().get("script2"), roleD.getDialogueMap().get(roleDTrigger2).findEntryWithWeight(0));
 		
 		// 6
-		assertTrue(roleA.getAllScripts().equals(roleC.getAllScripts()));
+		assertTrue(roleA.getAllVisibleScripts().equals(roleC.getAllVisibleScripts()));
 		assertSame(baseRole.getAllVisibleTriggers().get("trigger1"), roleC.getAllVisibleTriggers().get("trigger1"));
+		
+		// 7
+		assertNotSame(roleA.getAllVisibleTriggers().get("trigger2"), roleE.getAllVisibleTriggers().get("trigger2"));
+		assertSame(roleA.getAllVisibleTriggers().get("trigger2"), roleE.getAllVisibleTriggers().get("a.trigger2"));
 	}
 }

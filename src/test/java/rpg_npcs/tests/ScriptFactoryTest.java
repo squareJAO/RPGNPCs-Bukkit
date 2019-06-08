@@ -7,10 +7,10 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.Script;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.ScriptFactoryState;
-import rpg_npcs.script.ScriptMap;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 
 public class ScriptFactoryTest {
@@ -23,7 +23,7 @@ public class ScriptFactoryTest {
 	public void emptyTest() {
 		// Generate data
 		ScriptFactory emptyScriptFactory = getTestableEmptyScriptFactory();
-		ScriptFactoryState resultState = emptyScriptFactory.createConversationTree(new HashMap<String, String>(), new ScriptMap());
+		ScriptFactoryState resultState = emptyScriptFactory.createConversationTree(new HashMap<String, String>(), new RolePropertyMap<Script>());
 		
 		// Test
 		assertEquals(0, resultState.log.errorCount());
@@ -36,7 +36,7 @@ public class ScriptFactoryTest {
 		ScriptFactory emptyScriptFactory = getTestableEmptyScriptFactory();
 		Map<String, String> scriptMap = new HashMap<String, String>();
 		scriptMap.put("script1", "testText1");
-		ScriptFactoryState resultState = emptyScriptFactory.createConversationTree(scriptMap, new ScriptMap());
+		ScriptFactoryState resultState = emptyScriptFactory.createConversationTree(scriptMap, new RolePropertyMap<Script>());
 		
 		// Test
 		assertEquals(0, resultState.log.errorCount());

@@ -10,8 +10,8 @@ import rpg_npcs.prerequisite.Prerequisite;
 
 public class MoveTrigger extends Trigger {
 
-	public MoveTrigger(Collection<Prerequisite> prerequisites, int priority) {
-		super(prerequisites, priority);
+	public MoveTrigger(String nameString, Collection<Prerequisite> prerequisites, int priority) {
+		super(nameString, prerequisites, priority);
 	}
 	
 	@EventHandler

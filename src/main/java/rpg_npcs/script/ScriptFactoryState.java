@@ -1,48 +1,49 @@
 package rpg_npcs.script;
 
 import rpg_npcs.ParseLog;
+import rpg_npcs.role.RolePropertyMap;
 
 public class ScriptFactoryState {
 	public double TextSpeed;
 	public boolean BranchDone;
 	
-	private ScriptMap allScripts;
-	private ScriptMap newScripts;
+	private RolePropertyMap<Script> allScripts;
+	private RolePropertyMap<Script> newScripts;
 	
 	public ParseLog log;
 	
-	public ScriptFactoryState(double textSpeed, ScriptMap parentScripts) {
+	public ScriptFactoryState(double textSpeed, RolePropertyMap<Script> parentScripts) {
 		TextSpeed = textSpeed;
 		
 		allScripts = parentScripts;
-		newScripts = new ScriptMap();
+		newScripts = new RolePropertyMap<Script>();
 		log = new ParseLog();
 		
 		ResetBranchData();
 	}
 	
-	public ScriptMap getNewScripts() {
+	public RolePropertyMap<Script> getNewScripts() {
 		return newScripts;
 	}
 	
 	public void addScript(Script script) {
-		allScripts.addScript(script);
-		newScripts.addScript(script);
+		allScripts.put(script);
+		newScripts.put(script);
 	}
 	
 	public boolean doesScriptExist(String script) {
-		return allScripts.doesScriptExist(script);
+		return allScripts.containsKey(script);
 	}
 	
 	public Script getScript(String script) {
-		return allScripts.getScript(script);
+		return allScripts.get(script);
 	}
 	
 	public void ResetBranchData() {
 		BranchDone = false;
 	}
 
-	public ScriptMap getAllScripts() {
+	public RolePropertyMap<Script> getAllScripts() {
 		return allScripts;
 	}
 	

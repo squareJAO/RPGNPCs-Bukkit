@@ -11,15 +11,15 @@ public class TriggerFactory {
 		public Trigger trigger = null;
 	}
 	
-	public static TriggerFactoryReturnData createTrigger(String type, Collection<Prerequisite> prerequisites, int priority) {
+	public static TriggerFactoryReturnData createTrigger(String type, String name, Collection<Prerequisite> prerequisites, int priority) {
 		TriggerFactoryReturnData returnData = new TriggerFactoryReturnData();
 
 		switch (type.toLowerCase()) {
 		case "playermove":
-			returnData.trigger = new MoveTrigger(prerequisites, priority);
+			returnData.trigger = new MoveTrigger(name, prerequisites, priority);
 			break;
 		default:
-			returnData.log.addError("Unrecognised trigger type: '" + type + "'");
+			returnData.log.addError("Unrecognised trigger type: '" + type + "', name '" + name + "'");
 			break;
 		}
 		

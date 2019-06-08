@@ -11,15 +11,16 @@ import org.bukkit.event.Listener;
 import rpg_npcs.RpgTrait;
 import rpg_npcs.WeightedSet;
 import rpg_npcs.prerequisite.Prerequisite;
+import rpg_npcs.role.RoleNamedProperty;
 import rpg_npcs.script.Script;
 
-public abstract class Trigger implements Listener {
+public abstract class Trigger extends RoleNamedProperty implements Listener {
 	private final Collection<Prerequisite> prerequisites;
 	protected final Map<RpgTrait, WeightedSet<Script>> npcScripts;
 	private final int priority;
 	
-	public Trigger(Collection<Prerequisite> prerequisites, int priority) {
-		super();
+	public Trigger(String nameString, Collection<Prerequisite> prerequisites, int priority) {
+		super(nameString);
 		this.npcScripts = new HashMap<RpgTrait, WeightedSet<Script>>();
 		this.prerequisites = prerequisites;
 		this.priority = priority;

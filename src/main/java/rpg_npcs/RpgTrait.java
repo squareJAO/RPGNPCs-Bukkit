@@ -1,5 +1,6 @@
 package rpg_npcs;
 
+import java.util.Map;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
@@ -15,7 +16,9 @@ public class RpgTrait extends Trait {
 	
 	protected RPGNPCsPlugin instancingPlugin;
 	
-	@Persist("stopRange") protected int stopRange = 5;
+	@Persist("stopRange") protected int storedStopRange = -1;
+	
+	@Persist("stateData") public Map<String, String> stateDataMap;
 	
 	// Used for speech bubbles
 	protected SpeechBubble speechBubble;
@@ -56,13 +59,21 @@ public class RpgTrait extends Trait {
 		speechBubble.clearText();
 	}
 	
+	public int getStopRange() {
+		if (storedStopRange >= 0) {
+			return storedStopRange;
+		}
+		
+		return instancingPlugin.defaultConversationMaxRange;
+	}
 	
 	private int tickIndex = 0;
 	
 	@Override
 	public void run() {
 		// Check if conversation should end
-		if(tickIndex >= 20 && stopRange > 0 && isTalking()) {
+		int stopRange = getStopRange();
+		if(tickIndex >= instancingPlugin.ticksPerRangeCheck && stopRange > 0 && isTalking()) {
 			Location npcLocation = getNPC().getEntity().getLocation();
 			Location playerLocation = currentConversation.getPlayer().getLocation();
 			

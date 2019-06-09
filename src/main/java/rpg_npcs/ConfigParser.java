@@ -19,6 +19,9 @@ import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.Script;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.ScriptFactoryState;
+import rpg_npcs.state.State;
+import rpg_npcs.state.StateFactory;
+import rpg_npcs.state.StateFactory.StateFactoryReturnData;
 import rpg_npcs.trigger.Trigger;
 import rpg_npcs.trigger.TriggerFactory;
 import rpg_npcs.trigger.TriggerFactory.TriggerFactoryReturnData;
@@ -58,7 +61,10 @@ public class ConfigParser {
 		 *       - [parent1]
 		 *       - [parent2]
 		 *     states:
-		 *       
+		 *       state1:
+		 *         type: number/text/location
+		 *         scope: npc/global
+		 *         default: [default value]
 		 *     dialogues:
 		 *       eventName1: script1
 		 *       eventName2:
@@ -87,6 +93,13 @@ public class ConfigParser {
 		
 		int defaultEventPriority = config.getInt("defaultTriggerPriority");
 		
+		// Resolve base states
+		RolePropertyMap<State<?>> baseStatesMap = new RolePropertyMap<State<?>>();
+		if (config.isConfigurationSection("states")) {
+			ConfigurationSection roleStatesConfigSection = config.getConfigurationSection("states");
+			baseStatesMap = getStates(log, roleStatesConfigSection, Role.DEFAULT_ROLE_NAME_STRING);
+		}
+		
 		// Resolve base triggers
 		RolePropertyMap<Trigger> baseTriggerMap = new RolePropertyMap<Trigger>();
 		if (config.isConfigurationSection("triggers")) {
@@ -109,7 +122,7 @@ public class ConfigParser {
 		}
 
 		// Create base role
-		Role baseRole = new Role(Role.DEFAULT_ROLE_NAME_STRING, baseTriggerMap, new HashSet<Role>(), baseDialogueMap, baseScriptMap);
+		Role baseRole = new Role(Role.DEFAULT_ROLE_NAME_STRING, baseTriggerMap, new HashSet<Role>(), baseDialogueMap, baseScriptMap, baseStatesMap);
 				
 		// Resolve roles
 		RolePropertyMap<Role> rolesMap;
@@ -124,168 +137,61 @@ public class ConfigParser {
 		return new ConfigResult(log, rolesMap);
 	}
 	
-	private static Set<Prerequisite> getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
-		Set<Prerequisite> prerequisites = new HashSet<Prerequisite>();
+	private static RolePropertyMap<State<?>> getStates(ParseLog log, ConfigurationSection statesStatesConfigSection, String scopeName) {
+		RolePropertyMap<State<?>> statesMap = new RolePropertyMap<State<?>>();
+		Set<String> stateNameStrings = statesStatesConfigSection.getKeys(false);
 		
-		// Create prerequisites
-		Map<String, Object> prerequisitesConfigSet = prerequisiteConfigSection.getValues(false);
-		log.addInfo(" - prerequisites:");
-		for (String keyString : prerequisitesConfigSet.keySet()) {
-			// Extract key and value
-			String valueString = prerequisitesConfigSet.get(keyString).toString();
-			
-			// Convert to prerequisite
-			PrerequisiteFactoryReturnData returnPrerequisiteData = PrerequisiteFactory.createPrerequisite(keyString, valueString);
-			
-			if (returnPrerequisiteData.prerequisite != null) {
-				prerequisites.add(returnPrerequisiteData.prerequisite);
-			}
-			
-			log.addInfo("   - " + keyString + ": " + valueString);
-			log.add(returnPrerequisiteData.log);
-		}
-		
-		return prerequisites;
-	}
-
-	
-	private static RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, ScriptFactory scriptFactory, Role baseRole, int defaultEventPriority) {
-		RolePropertyMap<Role> rolesMap = new RolePropertyMap<Role>();
-		Set<String> roleNameStrings = rolesConfigSection.getKeys(false);
-		List<String> rolesToResolve = new LinkedList<>(roleNameStrings);
-		
-		rolesMap.put(baseRole);
-		roleNameStrings.add(baseRole.nameString);
-		
-		log.addInfo("Found " + roleNameStrings.size() + " roles");
-
-		// Mill down roleNameStrings to resolve all resolvable role trees
-		int lastChanged; // Keep track of how many roles were resolved. If this is 0 after a loop then there is a dependency loop
-		while (rolesToResolve.size() > 0) {
-			lastChanged = 0;
-			
-			// Loop through roles and resolve what can be resolved
-			for (int i = rolesToResolve.size() - 1; i >= 0; i--) {
-				String roleNameString = rolesToResolve.get(i);
-				
-				// Check name given in a valid format
-				if (roleNameString.contains(".")) {
-					log.addError("Role name cannot contain punctuation: '" + roleNameString + "' ");
-					roleNameStrings.remove(roleNameString);
-					rolesToResolve.remove(i);
-					lastChanged++;
-					continue;
-				}
-				
-				ConfigurationSection roleConfigSection = rolesConfigSection.getConfigurationSection(roleNameString);
-
-				if (roleConfigSection == null) {
-					log.addError("Role " + roleNameString + " is in an invalid format");
-					roleNameStrings.remove(roleNameString);
-					rolesToResolve.remove(i);
-					lastChanged++;
-					continue;
-				}
-				
-				// Resolve parent names into map
-				List<String> parentNames = getRoleParentNames(roleConfigSection, baseRole);
-				
-				// Check if can be resolved ever
-				if (!roleNameStrings.containsAll(parentNames)) {
-					Set<String> missingParentSet = new HashSet<String>(parentNames);
-					missingParentSet.removeAll(roleNameStrings);
-					log.addError("Role " + roleNameString + " has undefined parents: " + String.join(", ", missingParentSet));
-					roleNameStrings.remove(roleNameString);
-					rolesToResolve.remove(i);
-					lastChanged++;
-					continue;
-				}
-				
-				// Check if can be resolved now
-				if (!rolesMap.keySet().containsAll(parentNames)) {
-					continue;
-				}
-
-
-				log.addInfo("Role " + roleNameString + ":");
-
-				// Collect parents
-				Set<Role> parentRoles = new HashSet<Role>();
-				for (String parentName : parentNames) {
-					log.addInfo(" - parent: '" + parentName + "'");
-					parentRoles.add(rolesMap.get(parentName));
-				}
-				
-				// Gather parent scripts, states & triggers
-				RolePropertyMap<Trigger> allTriggersMap = new RolePropertyMap<Trigger>();
-				RolePropertyMap<Script> allScriptsMap = new RolePropertyMap<Script>();
-				for (Role role : parentRoles) {
-					allScriptsMap.putAll(role.getAllVisibleScripts());
-					allTriggersMap.putAll(role.getAllVisibleTriggers());
-				}
-				
-				// Gather script commands
-				RolePropertyMap<Script> roleScriptMap = new RolePropertyMap<Script>();
-				if (roleConfigSection.isConfigurationSection("scripts")) {
-					ConfigurationSection scriptStringsConfigSection = roleConfigSection.getConfigurationSection("scripts");
-					roleScriptMap = getScripts(log, scriptStringsConfigSection, scriptFactory, allScriptsMap);
-				}
-				allScriptsMap.putAll(roleScriptMap);
-				
-				// Generate role defined triggers
-				RolePropertyMap<Trigger> roleTriggersMap = new RolePropertyMap<Trigger>(); 
-				if (roleConfigSection.isConfigurationSection("triggers")) {
-					ConfigurationSection triggersConfigSection = roleConfigSection.getConfigurationSection("triggers");
-					roleTriggersMap = getTriggers(log, triggersConfigSection, defaultEventPriority);
-				}
-				allTriggersMap.putAll(roleTriggersMap);
-				
-				// Generate Dialogues
-				DialogueMapping dialogueMap = new DialogueMapping();
-				if (roleConfigSection.isConfigurationSection("dialogues")) {
-					ConfigurationSection roleDialoguesConfigSection = roleConfigSection.getConfigurationSection("dialogues");
-					dialogueMap = getDialogues(log, roleDialoguesConfigSection, allTriggersMap, allScriptsMap);
-				}
-				
-				Role newRole = new Role(roleNameString, roleTriggersMap, parentRoles, dialogueMap, roleScriptMap);
-				
-				rolesMap.put(newRole);
-				
-				// Mark role as populated
-				rolesToResolve.remove(i);
-				lastChanged++;
-			}
-			
-			// Check for dependency loops
-			if (lastChanged == 0) {
-				log.addError("Circular Role dependencies found with the following roles, unable to compile: " + String.join(", ", rolesToResolve));
-				rolesToResolve.clear();
-			}
-		}
-		
-		return rolesMap;
-	}
-	
-	private static RolePropertyMap<Script> getScripts(ParseLog log, ConfigurationSection scriptStringsConfigSection, ScriptFactory scriptFactory, RolePropertyMap<Script> allScriptsMap) {
-		Map<String, String> scriptStringsMap = new HashMap<String, String>();
-		Set<String> scriptNameStrings = scriptStringsConfigSection.getKeys(false);
-		
-		log.addInfo(" - scripts:");
-		
-		for (String scriptNameString : scriptNameStrings) {
-			if (!scriptStringsConfigSection.isString(scriptNameString)) {
-				log.addError("Script " + scriptNameString + " is not a string");
+		// Loop and resolve
+		for (String stateNameString : stateNameStrings) {
+			if (!statesStatesConfigSection.isConfigurationSection(stateNameString)) {
+				log.addError("State " + stateNameString + " is given in an invalid format");
 				continue;
 			}
 			
-			scriptStringsMap.put(scriptNameString, scriptStringsConfigSection.getString(scriptNameString));
+			// Check name
+			if (stateNameString.contains(".")) {
+				log.addError("State " + stateNameString + " is given in an invalid format");
+				continue;
+			}
 			
-			log.addInfo("   - " + scriptNameString);
+			log.addInfo("State " + stateNameString + ":");
+			
+			ConfigurationSection stateConfigSection = statesStatesConfigSection.getConfigurationSection(stateNameString);
+			
+			// Get type
+			if (!stateConfigSection.isString("type")) {
+				log.addError("State " + stateNameString + " does not have a type");
+				continue;
+			}
+			String typeString = stateConfigSection.getString("type");
+			
+			// Get scope
+			String scopeString = "npc";
+			if (stateConfigSection.isString("scope")) {
+				scopeString = stateConfigSection.getString("scope");
+			}
+			
+			// Get default
+			Object defaultValue = null;
+			if (stateConfigSection.contains("default")) {
+				defaultValue = stateConfigSection.get("default");
+			}
+			
+			// Create UUID
+			String uuid = scopeName + "." + stateNameString + "." + typeString;
+			
+			// Create state
+			StateFactoryReturnData data = StateFactory.makeState(stateNameString, typeString, scopeString, defaultValue, uuid);
+			if (data.state != null) {
+				statesMap.put(data.state);
+				log.addInfo(" - type: " + typeString);
+				log.addInfo(" - scope: " + scopeString);
+				log.addInfo(" - default: " + data.state.defaultValue.toString());
+			}
+			log.add(data.log);
 		}
 		
-		// Generate role specific scripts
-		ScriptFactoryState state = scriptFactory.createConversationTree(scriptStringsMap, allScriptsMap);
-		return state.getNewScripts();
+		return statesMap;
 	}
 	
 	private static RolePropertyMap<Trigger> getTriggers(ParseLog log, ConfigurationSection triggersConfigSection, int defaultEventPriority) {
@@ -353,6 +259,184 @@ public class ConfigParser {
 		}
 		
 		return triggerMap;
+	}
+
+	private static Set<Prerequisite> getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
+		Set<Prerequisite> prerequisites = new HashSet<Prerequisite>();
+		
+		// Create prerequisites
+		Map<String, Object> prerequisitesConfigSet = prerequisiteConfigSection.getValues(false);
+		log.addInfo(" - prerequisites:");
+		for (String keyString : prerequisitesConfigSet.keySet()) {
+			// Extract key and value
+			String valueString = prerequisitesConfigSet.get(keyString).toString();
+			
+			// Convert to prerequisite
+			PrerequisiteFactoryReturnData returnPrerequisiteData = PrerequisiteFactory.createPrerequisite(keyString, valueString);
+			
+			if (returnPrerequisiteData.prerequisite != null) {
+				prerequisites.add(returnPrerequisiteData.prerequisite);
+			}
+			
+			log.addInfo("   - " + keyString + ": " + valueString);
+			log.add(returnPrerequisiteData.log);
+		}
+		
+		return prerequisites;
+	}
+
+	
+	private static RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, ScriptFactory scriptFactory, Role baseRole, int defaultEventPriority) {
+		RolePropertyMap<Role> rolesMap = new RolePropertyMap<Role>();
+		Set<String> roleNameStrings = rolesConfigSection.getKeys(false);
+		List<String> rolesToResolve = new LinkedList<>(roleNameStrings);
+		
+		rolesMap.put(baseRole);
+		roleNameStrings.add(baseRole.nameString);
+		
+		log.addInfo("Found " + roleNameStrings.size() + " roles");
+
+		// Mill down roleNameStrings to resolve all resolvable role trees
+		int lastChanged; // Keep track of how many roles were resolved. If this is 0 after a loop then there is a dependency loop
+		while (rolesToResolve.size() > 0) {
+			lastChanged = 0;
+			
+			// Loop through roles and resolve what can be resolved
+			for (int i = rolesToResolve.size() - 1; i >= 0; i--) {
+				String roleNameString = rolesToResolve.get(i);
+				
+				// Check name given in a valid format
+				if (roleNameString.contains(".")) {
+					log.addError("Role name cannot contain punctuation: '" + roleNameString + "' ");
+					roleNameStrings.remove(roleNameString);
+					rolesToResolve.remove(i);
+					lastChanged++;
+					continue;
+				}
+				if (roleNameString == Role.DEFAULT_ROLE_NAME_STRING) {
+					log.addError("Role name cannot be " + Role.DEFAULT_ROLE_NAME_STRING + ", sorry!");
+					roleNameStrings.remove(roleNameString);
+					rolesToResolve.remove(i);
+					lastChanged++;
+					continue;
+				}
+				
+				ConfigurationSection roleConfigSection = rolesConfigSection.getConfigurationSection(roleNameString);
+
+				if (roleConfigSection == null) {
+					log.addError("Role " + roleNameString + " is in an invalid format");
+					roleNameStrings.remove(roleNameString);
+					rolesToResolve.remove(i);
+					lastChanged++;
+					continue;
+				}
+				
+				// Resolve parent names into map
+				List<String> parentNames = getRoleParentNames(roleConfigSection, baseRole);
+				
+				// Check if can be resolved ever
+				if (!roleNameStrings.containsAll(parentNames)) {
+					Set<String> missingParentSet = new HashSet<String>(parentNames);
+					missingParentSet.removeAll(roleNameStrings);
+					log.addError("Role " + roleNameString + " has undefined parents: " + String.join(", ", missingParentSet));
+					roleNameStrings.remove(roleNameString);
+					rolesToResolve.remove(i);
+					lastChanged++;
+					continue;
+				}
+				
+				// Check if can be resolved now
+				if (!rolesMap.keySet().containsAll(parentNames)) {
+					continue;
+				}
+
+
+				log.addInfo("Role " + roleNameString + ":");
+
+				// Collect parents
+				Set<Role> parentRoles = new HashSet<Role>();
+				for (String parentName : parentNames) {
+					log.addInfo(" - parent: '" + parentName + "'");
+					parentRoles.add(rolesMap.get(parentName));
+				}
+				
+				// Gather parent scripts, states & triggers
+				RolePropertyMap<Trigger> allTriggersMap = new RolePropertyMap<Trigger>();
+				RolePropertyMap<Script> allScriptsMap = new RolePropertyMap<Script>();
+				for (Role role : parentRoles) {
+					allScriptsMap.putAll(role.getAllVisibleScripts());
+					allTriggersMap.putAll(role.getAllVisibleTriggers());
+				}
+				
+				// Generate states
+				RolePropertyMap<State<?>> baseStatesMap = new RolePropertyMap<State<?>>();
+				if (roleConfigSection.isConfigurationSection("states")) {
+					ConfigurationSection roleStatesConfigSection = roleConfigSection.getConfigurationSection("states");
+					baseStatesMap = getStates(log, roleStatesConfigSection, roleNameString);
+				}
+				
+				// Gather script commands
+				RolePropertyMap<Script> roleScriptMap = new RolePropertyMap<Script>();
+				if (roleConfigSection.isConfigurationSection("scripts")) {
+					ConfigurationSection scriptStringsConfigSection = roleConfigSection.getConfigurationSection("scripts");
+					roleScriptMap = getScripts(log, scriptStringsConfigSection, scriptFactory, allScriptsMap);
+				}
+				allScriptsMap.putAll(roleScriptMap);
+				
+				// Generate role defined triggers
+				RolePropertyMap<Trigger> roleTriggersMap = new RolePropertyMap<Trigger>(); 
+				if (roleConfigSection.isConfigurationSection("triggers")) {
+					ConfigurationSection triggersConfigSection = roleConfigSection.getConfigurationSection("triggers");
+					roleTriggersMap = getTriggers(log, triggersConfigSection, defaultEventPriority);
+				}
+				allTriggersMap.putAll(roleTriggersMap);
+				
+				// Generate Dialogues
+				DialogueMapping dialogueMap = new DialogueMapping();
+				if (roleConfigSection.isConfigurationSection("dialogues")) {
+					ConfigurationSection roleDialoguesConfigSection = roleConfigSection.getConfigurationSection("dialogues");
+					dialogueMap = getDialogues(log, roleDialoguesConfigSection, allTriggersMap, allScriptsMap);
+				}
+				
+				Role newRole = new Role(roleNameString, roleTriggersMap, parentRoles, dialogueMap, roleScriptMap, baseStatesMap);
+				
+				rolesMap.put(newRole);
+				
+				// Mark role as populated
+				rolesToResolve.remove(i);
+				lastChanged++;
+			}
+			
+			// Check for dependency loops
+			if (lastChanged == 0) {
+				log.addError("Circular Role dependencies found with the following roles, unable to compile: " + String.join(", ", rolesToResolve));
+				rolesToResolve.clear();
+			}
+		}
+		
+		return rolesMap;
+	}
+	
+	private static RolePropertyMap<Script> getScripts(ParseLog log, ConfigurationSection scriptStringsConfigSection, ScriptFactory scriptFactory, RolePropertyMap<Script> allScriptsMap) {
+		Map<String, String> scriptStringsMap = new HashMap<String, String>();
+		Set<String> scriptNameStrings = scriptStringsConfigSection.getKeys(false);
+		
+		log.addInfo(" - scripts:");
+		
+		for (String scriptNameString : scriptNameStrings) {
+			if (!scriptStringsConfigSection.isString(scriptNameString)) {
+				log.addError("Script " + scriptNameString + " is not a string");
+				continue;
+			}
+			
+			scriptStringsMap.put(scriptNameString, scriptStringsConfigSection.getString(scriptNameString));
+			
+			log.addInfo("   - " + scriptNameString);
+		}
+		
+		// Generate role specific scripts
+		ScriptFactoryState state = scriptFactory.createConversationTree(scriptStringsMap, allScriptsMap);
+		return state.getNewScripts();
 	}
 	
 	private static DialogueMapping getDialogues(ParseLog log, ConfigurationSection roleDialoguesConfigSection, RolePropertyMap<Trigger> triggers, RolePropertyMap<Script> allScriptMap) {

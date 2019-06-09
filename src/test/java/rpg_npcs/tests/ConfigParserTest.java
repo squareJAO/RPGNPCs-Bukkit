@@ -114,7 +114,7 @@ public class ConfigParserTest {
 	public void triggerConfigTest() {
 		// Create test data
 		Configuration testConfigurationSection = new MemoryConfiguration();
-		testConfigurationSection.set("defaultEventPriority", 111);
+		testConfigurationSection.set("defaultTriggerPriority", 111);
 		ConfigurationSection triggersConfigurationSection = testConfigurationSection.createSection("triggers");
 		
 		int triggerCount = 6;

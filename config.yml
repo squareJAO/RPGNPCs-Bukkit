@@ -1,9 +1,12 @@
 # WARNING: Changing SQL settings while the server is running may lead to some funky results.
 # You have been warned.
 # This should be true unless you know waht you're doing
+# Recommended value: true
 useSQLite: true
 
 # The path to save state data to if the above option is set to true
+# Both relative and absolute paths are accepted
+# Recommended value: "data.sqlite"
 sqlitePath: "data.sqlite"
 
 # You only need to fill in this data if you are using an SQL server
@@ -17,11 +20,26 @@ SQL:
 
 # Whether the results of any config parsing should be printed to the console
 # Useful for debugging but fills the console up quickly with larger config files
-verboseLogging: true
+# Errors will be prined regardless of this setting
+# Recommended value: false
+verboseLogging: false
 
 # This is the priority given to all triggers where a priority isn't explicitly stated
 # You shouldn't usually need to change this
+# Recommended value: 500
 defaultTriggerPriority: 500
+
+# The range at which conversations stop when players walk away
+# This can be set per NPC through the NPC's config file in Citizens2,
+# or set back to this value with -1.
+# Disable conversations stopping by setting this value to -1
+# Recommended value: 5
+defaultConversationMaxRange: 5
+
+# A smaller value here makes some aspects of conversations more responsive, but
+# also creates more lag.
+# Recommended value: 15 in normal cases, 5 for very few NPCs, 30+ for many NPCs
+ticksPerRangeCheck: 15
 
 # The global triggers, visible from any role
 triggers:

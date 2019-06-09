@@ -2,6 +2,8 @@ package rpg_npcs;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +26,8 @@ import rpg_npcs.script.factoryPart.ScriptFactorySpeedPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryStatePart;
 
 public class RPGNPCsPlugin extends JavaPlugin {
+	public static MySQL sql;
+	
 	public Map<String, Role> roles = new HashMap<String, Role>();
 
 	protected ScriptFactory scriptFactory;
@@ -32,7 +36,10 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	
 	private Set<ScriptFactoryPart> parts = new HashSet<ScriptFactoryPart>();
 	
+	// Config settings
 	public boolean verboseLogging = true;
+	public int defaultConversationMaxRange = 5;
+	public int ticksPerRangeCheck = 15;
 	
 	@Override
 	public void onEnable(){
@@ -50,17 +57,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		// Load config defaults
 		saveDefaultConfig();
 		getConfig().options().copyDefaults(true);
-		reloadConfig();
-		
-		// Load config metavalues
-		verboseLogging = getConfig().getBoolean("verboseLogging");
 		
 		// Create SQL
-		boolean sqlSuccess = connectSQL();
-		if (!sqlSuccess) {
-			return;
-		}
-		
+		createSQL();
 		
 		// Add commands
 		CommandReloadScripts commandReloadConversations = new CommandReloadScripts(this);
@@ -83,11 +82,10 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(RpgTrait.class).withName("Rpgnpc"));
 	}
 	
-	public boolean connectSQL() {
+	private void createSQL() {
 		boolean isSQLite = getConfig().getBoolean("useSQLite");
 		
 		String sqlitePathString = getConfig().getString("sqlitePath");
-		
 		if (!Paths.get(sqlitePathString).isAbsolute()) {
 			sqlitePathString = (new File(getDataFolder(), sqlitePathString)).getAbsolutePath();
 		}
@@ -98,37 +96,24 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		String sqlUsername = getConfig().getString("SQL.username");
 		String sqlPassword = getConfig().getString("SQL.password");
 		
-		try {
-			if (isSQLite) {
-				MySQL.connectSQLite(sqlitePathString);
-			} else {
-				MySQL.connect(sqlHost, sqlPort, sqlDatabase, sqlUsername, sqlPassword);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-			Bukkit.getLogger().log(Level.SEVERE, "Failed to establish connection with SQL database");
-			
-			Bukkit.getPluginManager().disablePlugin(this);
-			
-			return false;
+		if (isSQLite) {
+			sql = MySQL.makeSQLite(sqlitePathString);
+		} else {
+			sql = MySQL.makeSQL(sqlHost, sqlPort, sqlDatabase, sqlUsername, sqlPassword);
 		}
 		
-		return true;
-	}
-	
-	public boolean disconnectSQL() {
+		// Create tables
 		try {
-			MySQL.disconnect();
+			Connection connection = sql.connect();
+			PreparedStatement statement = connection.prepareStatement(
+					"CREATE TABLE IF NOT EXISTS global_states (" + 
+					"state_uuid TEXT PRIMARY KEY," + 
+					"value TEXT )");
+			statement.execute();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			Bukkit.getLogger().log(Level.SEVERE, "Failed to disconnect from SQL database");
-			
 			Bukkit.getPluginManager().disablePlugin(this);
-			
-			return false;
 		}
-		
-		return true;
 	}
 	
 	public void printLogToConsole(ParseLog log) {
@@ -168,8 +153,15 @@ public class RPGNPCsPlugin extends JavaPlugin {
 			unbindNpcTriggers(npc);
 		}
 		
-		// Set new data
+		// Reload
 		reloadConfig();
+		
+		// Load metavalues
+		verboseLogging = getConfig().getBoolean("verboseLogging");
+		defaultConversationMaxRange = getConfig().getInt("defaultConversationMaxRange");
+		ticksPerRangeCheck = getConfig().getInt("ticksPerRangeCheck");
+		
+		// Set new data
 		ConfigParser.ConfigResult result = ConfigParser.reloadConfig(scriptFactory, getConfig());
 		roles = result.rolesMap;
 		

@@ -13,23 +13,27 @@ import rpg_npcs.DialogueMapping;
 import rpg_npcs.RpgTrait;
 import rpg_npcs.WeightedSet;
 import rpg_npcs.script.Script;
+import rpg_npcs.state.State;
 import rpg_npcs.trigger.Trigger;
 
 public class Role extends RoleNamedProperty {
-	private final RolePropertyMap<Trigger> triggers;
 	private final Set<Role> parentRoles;
 	private final DialogueMapping dialogueMap;
+	private final RolePropertyMap<Trigger> triggers;
 	private final RolePropertyMap<Script> scripts;
+	private final RolePropertyMap<State<?>> states;
 	
-	public static final String DEFAULT_ROLE_NAME_STRING = "Base Role";
+	public static final String DEFAULT_ROLE_NAME_STRING = "__baseRole__";
 	
 	public Role(String roleName, @NotNull RolePropertyMap<Trigger> triggers, @NotNull Set<Role> parentRoles,
-			@NotNull DialogueMapping dialogueMap, @NotNull RolePropertyMap<Script> scripts) {
+			@NotNull DialogueMapping dialogueMap, @NotNull RolePropertyMap<Script> scripts,
+			@NotNull RolePropertyMap<State<?>> states) {
 		super(roleName);
 		this.triggers = triggers;
 		this.parentRoles = parentRoles;
 		this.dialogueMap = dialogueMap;
 		this.scripts = scripts;
+		this.states = states;
 	}
 	
 	/**
@@ -64,6 +68,24 @@ public class Role extends RoleNamedProperty {
 		// Put this's triggers in
 		results.putAll(this.triggers, "");
 		results.putAll(this.triggers, this.nameString + ".");
+		
+		return results;
+	}
+	
+	/**
+	 * @return a set of all of the states visible to this role
+	 */
+	public RolePropertyMap<State<?>> getAllVisibleStates() {
+		RolePropertyMap<State<?>> results = new RolePropertyMap<State<?>>();
+
+		// Recursively copy parent states
+		for (Role role : getImmediateParentRoles()) {
+			results.putAll(role.getAllVisibleStates());
+		}
+		
+		// Put this's states in
+		results.putAll(this.states, "");
+		results.putAll(this.states, this.nameString + ".");
 		
 		return results;
 	}

@@ -1,3 +1,34 @@
-defaultEventPriority: 5
+# WARNING: Changing SQL settings while the server is running may lead to some funky results.
+# You have been warned.
+# This should be true unless you know waht you're doing
+useSQLite: true
+
+# The path to save state data to if the above option is set to true
+sqlitePath: "data.sqlite"
+
+# You only need to fill in this data if you are using an SQL server
+# and the above option is set to false
+SQL:
+  host: ""
+  port: 33333
+  database: ""
+  username: ""
+  password: ""
+
+# Whether the results of any config parsing should be printed to the console
+# Useful for debugging but fills the console up quickly with larger config files
+verboseLogging: true
+
+# This is the priority given to all triggers where a priority isn't explicitly stated
+# You shouldn't usually need to change this
+defaultTriggerPriority: 500
+
+# The global triggers, visible from any role
 triggers:
+  walkClose:
+    type: playermove
+    prerequisites:
+      range: 5
+      
+# The set of roles
 roles:

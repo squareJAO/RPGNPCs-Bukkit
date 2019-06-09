@@ -76,4 +76,16 @@ public class ParseLog {
 		
 		return getFormattedString(colours);
 	}
+
+	public ParseLog getErrors() {
+		ParseLog errorLog = new ParseLog();
+
+		for (LogEntry logEntry : entries) {
+			if (logEntry.messageType == LogEntry.Type.ERROR) {
+				errorLog.addError(logEntry.messageString);
+			}
+		}
+		
+		return errorLog;
+	}
 }

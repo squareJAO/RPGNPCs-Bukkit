@@ -85,7 +85,7 @@ public class ConfigParser {
 		
 		ParseLog log = new ParseLog();
 		
-		int defaultEventPriority = config.getInt("defaultEventPriority");
+		int defaultEventPriority = config.getInt("defaultTriggerPriority");
 		
 		// Resolve base triggers
 		RolePropertyMap<Trigger> baseTriggerMap = new RolePropertyMap<Trigger>();
@@ -167,6 +167,16 @@ public class ConfigParser {
 			// Loop through roles and resolve what can be resolved
 			for (int i = rolesToResolve.size() - 1; i >= 0; i--) {
 				String roleNameString = rolesToResolve.get(i);
+				
+				// Check name given in a valid format
+				if (roleNameString.contains(".")) {
+					log.addError("Role name cannot contain punctuation: '" + roleNameString + "' ");
+					roleNameStrings.remove(roleNameString);
+					rolesToResolve.remove(i);
+					lastChanged++;
+					continue;
+				}
+				
 				ConfigurationSection roleConfigSection = rolesConfigSection.getConfigurationSection(roleNameString);
 
 				if (roleConfigSection == null) {

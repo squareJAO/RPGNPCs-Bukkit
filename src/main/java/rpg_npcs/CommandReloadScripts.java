@@ -21,15 +21,13 @@ public class CommandReloadScripts implements TabExecutor {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-		sender.sendMessage("Reloading conversation scripts...");
-		
-		// Reload the config file
-		instance.reloadConfig();
-		instance.saveConfig();
+		sender.sendMessage("Reloading npcs...");
 		
 		// Regenerate the dialogue trees
 		ParseLog reloadLog = instance.reloadData();
 		
+		// Print log
+		instance.printLogToConsole(reloadLog);
 		sender.sendMessage(reloadLog.getFormattedString());
 		sender.sendMessage("Reloaded.");
 		

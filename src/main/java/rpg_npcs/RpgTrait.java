@@ -1,5 +1,6 @@
 package rpg_npcs;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -7,18 +8,60 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import net.citizensnpcs.api.persistence.DelegatePersistence;
 import net.citizensnpcs.api.persistence.Persist;
+import net.citizensnpcs.api.persistence.Persister;
 import net.citizensnpcs.api.trait.Trait;
+import net.citizensnpcs.api.util.DataKey;
 import rpg_npcs.script.Script;
 
 public class RpgTrait extends Trait {
+	public static class DataMapPersister implements Persister<Map<String, String>> {
+		// WARNING: Backslash hell, tread carefully
+		
+		@Override
+		public Map<String, String> create(DataKey root) {
+			Map<String, String> map = new HashMap<String, String>();
+			
+			String stateNameString = root.getString("StateNames");
+			
+			String[] nameStrings = stateNameString.split("[^\\\\];"); // Split on non-escaped semicolons
+			
+			for (String nameString : nameStrings) {
+				nameString = nameString.replace("\\;", ";").replace("\\\\", "\\"); // Unescapes string, Replaces \; with ; and \\ with \
+				map.put(nameString, root.getString(nameString));
+			}
+			
+			return map;
+		}
+		
+		@Override
+		public void save(Map<String, String> map, DataKey root) {
+			String[] nameStrings = map.keySet().toArray(new String[map.size()]);
+			
+			for (int i = 0; i < nameStrings.length; i++) {
+				nameStrings[i] = nameStrings[i].replace("\\", "\\\\").replace(";", "\\;"); // Escapes string, Replaces ; with \; and \ with \\
+			}
+			
+			String stateNameString = String.join(";", nameStrings);
+			root.setString("StateNames", stateNameString);
+			
+			for (String key : map.keySet()) {
+				root.setString(key, map.get(key));
+			}
+		}
+	}
+	
 	protected static Random rng = new Random();
 	
 	protected RPGNPCsPlugin instancingPlugin;
 	
-	@Persist("stopRange") protected int storedStopRange = -1;
+	@Persist("stopRange")
+	protected int storedStopRange = -1;
 	
-	@Persist("stateData") public Map<String, String> stateDataMap;
+	@Persist("stateData")
+	@DelegatePersistence(DataMapPersister.class)
+	public Map<String, String> stateDataMap;
 	
 	// Used for speech bubbles
 	protected SpeechBubble speechBubble;

@@ -6,6 +6,7 @@ import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import net.citizensnpcs.api.persistence.DelegatePersistence;
@@ -13,9 +14,10 @@ import net.citizensnpcs.api.persistence.Persist;
 import net.citizensnpcs.api.persistence.Persister;
 import net.citizensnpcs.api.trait.Trait;
 import net.citizensnpcs.api.util.DataKey;
+import rpg_npcs.role.Role;
 import rpg_npcs.script.Script;
 
-public class RpgTrait extends Trait {
+public class RpgTrait extends Trait implements RpgNpc {
 	public static class DataMapPersister implements Persister<Map<String, String>> {
 		// WARNING: Backslash hell, tread carefully
 		
@@ -56,12 +58,14 @@ public class RpgTrait extends Trait {
 	
 	protected RPGNPCsPlugin instancingPlugin;
 	
+	protected Role role;
+	
 	@Persist("stopRange")
 	protected int storedStopRange = -1;
 	
 	@Persist("stateData")
 	@DelegatePersistence(DataMapPersister.class)
-	public Map<String, String> stateDataMap;
+	protected Map<String, String> stateDataMap;
 	
 	// Used for speech bubbles
 	protected SpeechBubble speechBubble;
@@ -102,6 +106,22 @@ public class RpgTrait extends Trait {
 		speechBubble.clearText();
 	}
 	
+	public void setRole(Role newRole) {
+		if (role != null) {
+			role.unregisterNpc(this);
+		}
+		
+		role = newRole;
+		
+		if (newRole != null) {
+			newRole.registerNpc(this);
+		}
+	}
+	
+	public Role getRole() {
+		return role;
+	}
+	
 	public int getStopRange() {
 		if (storedStopRange >= 0) {
 			return storedStopRange;
@@ -130,7 +150,7 @@ public class RpgTrait extends Trait {
 		tickIndex++;
 	}
 	
-	protected void stopConversation() {
+	public void stopConversation() {
 		if (currentConversation != null) {
 			currentConversation.stopConversation();
 		}
@@ -162,7 +182,27 @@ public class RpgTrait extends Trait {
 		}
 		
 		// Start new conversation
-		currentConversation = new Conversation(instancingPlugin, speechBubble, player, this.getNPC(), priority);
+		currentConversation = new Conversation(instancingPlugin, speechBubble, player, this, priority);
 		currentConversation.startConversation(script);
+	}
+
+	@Override
+	public Map<String, String> getStateMap() {
+		return stateDataMap;
+	}
+
+	@Override
+	public void setStateValue(String key, String value) {
+		stateDataMap.put(key, value);
+	}
+
+	@Override
+	public boolean isSpawned() {
+		return this.getNPC().isSpawned();
+	}
+
+	@Override
+	public Entity getEntity() {
+		return this.getNPC().getEntity();
 	}
 }

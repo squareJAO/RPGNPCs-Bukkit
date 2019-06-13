@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-import rpg_npcs.RpgTrait;
+import rpg_npcs.RpgNpc;
 import rpg_npcs.prerequisite.Prerequisite;
 
 public class MoveTrigger extends Trigger {
@@ -21,8 +21,8 @@ public class MoveTrigger extends Trigger {
 			return;
 		}
 		
-		for (RpgTrait npc : npcScripts.keySet()) {
-			if (npc.getNPC().isSpawned() && npc.getNPC().getEntity().getWorld() == event.getPlayer().getWorld()) {
+		for (RpgNpc npc : npcScripts.keySet()) {
+			if (npc.isSpawned() && npc.getEntity().getWorld() == event.getPlayer().getWorld()) {
 				trigger(event.getPlayer(), npc);
 			}
 		}

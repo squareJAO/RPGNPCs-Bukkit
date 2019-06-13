@@ -8,7 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
-import rpg_npcs.RpgTrait;
+import rpg_npcs.RpgNpc;
 import rpg_npcs.WeightedSet;
 import rpg_npcs.prerequisite.Prerequisite;
 import rpg_npcs.role.RoleNamedProperty;
@@ -16,21 +16,21 @@ import rpg_npcs.script.Script;
 
 public abstract class Trigger extends RoleNamedProperty implements Listener {
 	private final Collection<Prerequisite> prerequisites;
-	protected final Map<RpgTrait, WeightedSet<Script>> npcScripts;
+	protected final Map<RpgNpc, WeightedSet<Script>> npcScripts;
 	private final int priority;
 	
 	public Trigger(String nameString, Collection<Prerequisite> prerequisites, int priority) {
 		super(nameString);
-		this.npcScripts = new HashMap<RpgTrait, WeightedSet<Script>>();
+		this.npcScripts = new HashMap<RpgNpc, WeightedSet<Script>>();
 		this.prerequisites = prerequisites;
 		this.priority = priority;
 	}
 	
-	public void registerNPC(RpgTrait npc, WeightedSet<Script> weightedScriptSet) {
+	public void registerNPC(RpgNpc npc, WeightedSet<Script> weightedScriptSet) {
 		npcScripts.put(npc, weightedScriptSet);
 	}
 	
-	public void unregisterNPC(RpgTrait npc) {
+	public void unregisterNPC(RpgNpc npc) {
 		npcScripts.remove(npc);
 	}
 	
@@ -42,7 +42,7 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 		return prerequisites;
 	}
 	
-	protected void trigger(Player player, RpgTrait npc) {
+	protected void trigger(Player player, RpgNpc npc) {
 		if (arePrerequisitesMet(player, npc) && priority > npc.getConversationPriority()) {
 			WeightedSet<Script> scriptSet = npcScripts.get(npc);
 			Script script = scriptSet.getRandom();
@@ -64,7 +64,7 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 	 * @param player The player that the event is triggered by
 	 * @return A boolean, true if prerequisites are met
 	 */
-	private final boolean arePrerequisitesMet(Player player, RpgTrait npc) {
+	private final boolean arePrerequisitesMet(Player player, RpgNpc npc) {
 		for (Prerequisite dialoguePrerequisite : prerequisites) {
 			if (!dialoguePrerequisite.isMet(player, npc)) {
 				return false;

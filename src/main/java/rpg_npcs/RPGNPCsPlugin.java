@@ -9,7 +9,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -24,6 +26,9 @@ import rpg_npcs.script.factoryPart.ScriptFactoryPausePart;
 import rpg_npcs.script.factoryPart.ScriptFactoryQuestionPart;
 import rpg_npcs.script.factoryPart.ScriptFactorySpeedPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryStatePart;
+import rpg_npcs.script.node.command.ScriptCommandNode;
+import rpg_npcs.script.node.command.ScriptCrouchNode;
+import rpg_npcs.script.node.command.ScriptLookCloseNode;
 
 public class RPGNPCsPlugin extends JavaPlugin {
 	public static MySQL sql;
@@ -31,8 +36,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	public Map<String, Role> roles = new HashMap<String, Role>();
 
 	protected ScriptFactory scriptFactory;
+	protected ScriptFactoryCommandPart scriptFactoryCommandPart;
 	
-	final Set<RpgTrait> npcs = new HashSet<RpgTrait>();
+	final Set<RpgNpc> npcs = new HashSet<RpgNpc>();
 	
 	private Set<ScriptFactoryPart> parts = new HashSet<ScriptFactoryPart>();
 	
@@ -66,10 +72,14 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		getCommand("reloadRPGNPCs").setTabCompleter(commandReloadConversations);
 		getCommand("reloadRPGNPCs").setExecutor(commandReloadConversations);
 		
+		// Create default factory parts
+		scriptFactoryCommandPart = new ScriptFactoryCommandPart();
+		addDefaultCommandFactoryData();
+		
 		// Add default factory parts
 		addFactoryPart(new ScriptFactoryPausePart());
 		addFactoryPart(new ScriptFactorySpeedPart());
-		addFactoryPart(new ScriptFactoryCommandPart());
+		addFactoryPart(scriptFactoryCommandPart);
 		addFactoryPart(new ScriptFactoryQuestionPart());
 		addFactoryPart(new ScriptFactoryStatePart());
 		buildScriptFactory();
@@ -116,6 +126,22 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 	}
 	
+	private void addDefaultCommandFactoryData() {
+		addScriptCommand("crouch", s -> ScriptCrouchNode.generateCrouchCommandNode(s, false));
+		addScriptCommand("uncrouch", s -> ScriptCrouchNode.generateCrouchCommandNode(s, true));
+		addScriptCommand("look(?:close)?", s -> ScriptLookCloseNode.generateLookCloseCommandNode(s, false));
+		addScriptCommand("lookfar", s -> ScriptLookCloseNode.generateLookCloseCommandNode(s, true));
+	}
+	
+	/**
+	 * Adds a command to the script factory for use when compiling scripts
+	 * @param regexString A regex string to match against command words
+	 * @param function The function, passed a parameter string, which should return a ScriptCommandNode, or null if the parameters are invalid
+	 */
+	public void addScriptCommand(String regexString, Function<String, ScriptCommandNode> generatingFunction) {
+		scriptFactoryCommandPart.addCommandNodeGenerator(Pattern.compile(regexString), generatingFunction);
+	}
+	
 	public void printLogToConsole(ParseLog log) {
 		String logString;
 		if (verboseLogging) {
@@ -148,11 +174,6 @@ public class RPGNPCsPlugin extends JavaPlugin {
 			role.unregisterTriggerListeners(this);
 		}
 		
-		// Unregister npcs
-		for (RpgTrait npc : npcs) {
-			unbindNpcTriggers(npc);
-		}
-		
 		// Reload
 		reloadConfig();
 		
@@ -171,35 +192,30 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 		
 		// Register npcs
-		for (RpgTrait npc : npcs) {
-			bindNpcTriggers(npc);
+		for (RpgNpc npc : npcs) {
+			setNPCRole(npc);
 		}
 		
 		return result.log;
 	}
 	
-	public void registerRPGNPC(RpgTrait npc) {
-		getLogger().info("Registering NPC " + npc.getNPC().getName());
+	public void registerRPGNPC(RpgNpc npc) {
+		getLogger().info("Registering NPC " + npc.getName());
 		npcs.add(npc);
-		bindNpcTriggers(npc);
+		setNPCRole(npc);
 	}
 	
-	public void unregisterRPGNPC(RpgTrait npc) {
+	public void unregisterRPGNPC(RpgNpc npc) {
 		npcs.remove(npc);
-		unbindNpcTriggers(npc);
+		npc.setRole(null);
 	}
 	
-	private void bindNpcTriggers(RpgTrait npc) {
-		String npcName = npc.getNPC().getName();
+	private void setNPCRole(RpgNpc npc) {
+		String npcName = npc.getName();
 		if (roles.containsKey(npcName)) {
-			roles.get(npcName).registerNpc(npc);
-		}
-	}
-	
-	private void unbindNpcTriggers(RpgTrait npc) {
-		String npcName = npc.getNPC().getName();
-		if (roles.containsKey(npcName)) {
-			roles.get(npcName).unregisterNpc(npc);
+			npc.setRole(roles.get(npcName));
+		} else {
+			npc.setRole(roles.get(Role.DEFAULT_ROLE_NAME_STRING));
 		}
 	}
 }

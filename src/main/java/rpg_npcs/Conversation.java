@@ -3,20 +3,19 @@ package rpg_npcs;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-import net.citizensnpcs.api.npc.NPC;
 import rpg_npcs.script.Script;
 import rpg_npcs.script.node.ScriptNode;
 
 public class Conversation {
 	private final Player player;
-	private final NPC npc;
+	private final RpgNpc npc;
 	private final SpeechBubble bubble;
 	private final int conversationPriority;
 	public final Plugin instancingPlugin;
 	private boolean isRunning;
 	private ScriptNode currentNode;
 	
-	public Conversation(Plugin instancingPlugin, SpeechBubble bubble, Player player, NPC npc, int conversationPriority) {
+	public Conversation(Plugin instancingPlugin, SpeechBubble bubble, Player player, RpgNpc npc, int conversationPriority) {
 		this.player = player;
 		this.npc = npc;
 		this.bubble = bubble;
@@ -41,7 +40,7 @@ public class Conversation {
 		return player;
 	}
 
-	public NPC getNpc() {
+	public RpgNpc getNpc() {
 		if (!isRunning) {
 			return null;
 		}

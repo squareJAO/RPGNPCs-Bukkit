@@ -14,26 +14,26 @@ import rpg_npcs.SpeechBubble;
 public class ScriptTextNode extends ScriptLinearNode {
 	protected static final int TICKS_PER_CYCLE = 1;
 
-	private final String _templateTextString;
-	private final double _textSpeed;
+	private final String templateTextString;
+	private final double textSpeed;
 	
 	private final String SHORTPAUSE_CHARACTERS = ",:;";
 	private final int SHORTPAUSE = 3;
 	private final String LONGPAUSE_CHARACTERS = ".?!";
 	private final int LONGPAUSE = 5;
 
-	private final int _charactersPerWrap;
-	private final String _defaultLineStartString;
+	private final int charactersPerWrap;
+	private final String defaultLineStartString;
 	
-	private Map<Conversation, BukkitTask> _addTextTasks = new HashMap<Conversation, BukkitTask>();
+	private Map<Conversation, BukkitTask> addTextTasks = new HashMap<Conversation, BukkitTask>();
 	
 	public ScriptTextNode(String text, double speed, int charactersPerWrap, String defaultLineStartString) {
 		super();
 		
-		_templateTextString = text;
-		_textSpeed = speed;
-		_charactersPerWrap = charactersPerWrap;
-		_defaultLineStartString = defaultLineStartString;
+		templateTextString = text;
+		textSpeed = speed;
+		this.charactersPerWrap = charactersPerWrap;
+		this.defaultLineStartString = defaultLineStartString;
 	}
 
 	@Override
@@ -41,13 +41,13 @@ public class ScriptTextNode extends ScriptLinearNode {
 		ScriptTextNode thisConversationNode = this;
 		SpeechBubble bubble = conversation.getSpeechBubble();
 		
-		String _textString;
+		String textString;
 
 		// Check if PlaceholdersAPI is present and format text
 		if (RPGNPCsPlugin.hasPlaceholderAPI()) {
-			_textString = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), _templateTextString);
+			textString = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), templateTextString);
 		} else {
-			_textString = _templateTextString;
+			textString = templateTextString;
 		}
 		
 		// Create a new task to add text
@@ -57,12 +57,12 @@ public class ScriptTextNode extends ScriptLinearNode {
 			
 			public void run() {
 				// Add char multiplier
-				_charsToAdd += _textSpeed * TICKS_PER_CYCLE;
+				_charsToAdd += textSpeed * TICKS_PER_CYCLE;
 				
 				// Add any chars that need added
 				while (_charsToAdd > 1) {
 					// Check if finished
-					if (_nextCharIndex >= _textString.length()) {
+					if (_nextCharIndex >= textString.length()) {
 						// Cancel this task
 						thisConversationNode.stopNode(conversation);
 						
@@ -74,22 +74,22 @@ public class ScriptTextNode extends ScriptLinearNode {
 					
 					boolean hasAddedChar = false; // Eats characters until a normal character is hit
 					
-					while (!hasAddedChar && _nextCharIndex < _textString.length()) {
-						char nextChar = _textString.charAt(_nextCharIndex);
+					while (!hasAddedChar && _nextCharIndex < textString.length()) {
+						char nextChar = textString.charAt(_nextCharIndex);
 						
 						switch (nextChar) {
 						// On a newline a new line should be added to the hologram
 						case '\n':
 							// Add a new line
 							bubble.addNewLine();
-							bubble.setLastLineText(_defaultLineStartString);
+							bubble.setLastLineText(defaultLineStartString);
 							
 							_nextCharIndex += 1;
 							break;
 						// On a formatting char add the formatting code but set to add another char too
 						case '§':
-							if (_nextCharIndex + 1 < _textString.length()) {
-								bubble.setLastLineText(bubble.getLastLineString() + '§' + _textString.charAt(_nextCharIndex + 1));
+							if (_nextCharIndex + 1 < textString.length()) {
+								bubble.setLastLineText(bubble.getLastLineString() + '§' + textString.charAt(_nextCharIndex + 1));
 							}
 							_nextCharIndex += 2;
 							break;
@@ -97,10 +97,10 @@ public class ScriptTextNode extends ScriptLinearNode {
 						case ' ':
 							int lastLineLength = bubble.getLastLineLength();
 							
-							if (lastLineLength >= _charactersPerWrap) {
+							if (lastLineLength >= charactersPerWrap) {
 								// Add a new line
 								bubble.addNewLine();
-								bubble.setLastLineText(_defaultLineStartString);
+								bubble.setLastLineText(defaultLineStartString);
 							} else {
 								bubble.setLastLineText(bubble.getLastLineString() + ' ');
 							}
@@ -132,19 +132,19 @@ public class ScriptTextNode extends ScriptLinearNode {
 			}
 		}.runTaskTimer(conversation.instancingPlugin, 1, TICKS_PER_CYCLE);
 		
-		_addTextTasks.put(conversation, newTask);
+		addTextTasks.put(conversation, newTask);
 	}
 
 	@Override
 	public void stopNode(Conversation conversation) {
-		if (_addTextTasks.containsKey(conversation)) {
-			_addTextTasks.get(conversation).cancel();
-			_addTextTasks.remove(conversation);
+		if (addTextTasks.containsKey(conversation)) {
+			addTextTasks.get(conversation).cancel();
+			addTextTasks.remove(conversation);
 		}
 	}
 
 	@Override
 	protected String getNodeRepresentation() {
-		return "<say '" + _templateTextString.replace("\n", "\\n").replace("\t", "\\t") + "' with a speed of " + _textSpeed + ">";
+		return "<say '" + templateTextString.replace("\n", "\\n").replace("\t", "\\t") + "' with a speed of " + textSpeed + ">";
 	}
 }

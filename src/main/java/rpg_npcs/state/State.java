@@ -14,18 +14,19 @@ import org.bukkit.Bukkit;
 import com.sun.istack.internal.NotNull;
 
 import rpg_npcs.RPGNPCsPlugin;
-import rpg_npcs.RpgTrait;
+import rpg_npcs.RpgNpc;
 import rpg_npcs.role.RoleNamedProperty;
 
-public abstract class State <T> extends RoleNamedProperty {
+public class State <T> extends RoleNamedProperty {
 	private final StorageType storageType; // Global = same for all npcs with a role, Npc = unique to NPCs
 	
 	private final String uuidString; // The identifier, unique to this state, used when storing this state in the database
 	
-	// Value used as value when state is global, or as default value when state is local
-	public final T defaultValue;
+	private final SupportedStateType<T> type;
 	
-	private Map<RpgTrait, T> npcValueMapCache;
+	private final T defaultValue;
+	
+	private Map<RpgNpc, T> npcValueMapCache;
 	private T globalValueCache;
 	
 	public enum StorageType {
@@ -33,13 +34,13 @@ public abstract class State <T> extends RoleNamedProperty {
 		NPC
 	}
 	
-	public State(@NotNull String name, T defaultValue, StorageType storageType, @NotNull String uuid) {
+	public State(@NotNull String name, @NotNull String uuid, SupportedStateType<T> type, StorageType storageType, T defaultValue) {
 		super(name);
-		this.storageType = storageType;
-		
-		this.uuidString = uuid;
 		
 		this.defaultValue = defaultValue;
+		this.storageType = storageType;
+		this.uuidString = uuid;
+		this.type = type;
 		
 		// Initialise variables
 		switch (storageType) {
@@ -48,7 +49,7 @@ public abstract class State <T> extends RoleNamedProperty {
 			getStoredGlobalValue();
 			break;
 		case NPC:
-			this.npcValueMapCache = new HashMap<RpgTrait, T>();
+			this.npcValueMapCache = new HashMap<RpgNpc, T>();
 			break;
 		}
 	}
@@ -71,7 +72,7 @@ public abstract class State <T> extends RoleNamedProperty {
 			    	
 			    	if (results.next()) { // If results
 						String valueString = results.getString("value");
-						T value = fromString(valueString);
+						T value = type.valueFromString(valueString);
 						
 						if (value == null) {
 							Bukkit.getLogger().log(Level.WARNING, "Could not parse stored state value '" + valueString +
@@ -84,7 +85,7 @@ public abstract class State <T> extends RoleNamedProperty {
 		    		} else { // If 0 results
 			    		globalValueCache = defaultValue;
 			    		
-			    		String valueString = rpg_npcs.state.State.this.toString(defaultValue);
+			    		String valueString = type.valueToString(defaultValue);
 			    		
 			    		String insertCommand = "INSERT INTO global_states (state_uuid, value) VALUES (?, ?)";
 				    	PreparedStatement insertStatement = connection.prepareStatement(insertCommand);
@@ -104,7 +105,7 @@ public abstract class State <T> extends RoleNamedProperty {
 		}.run();
 	}
 	
-	public T getValue(RpgTrait npc) {
+	public T getValue(RpgNpc npc) {
 		switch (storageType) {
 		case GLOBAL:
 			// Assume value always cached
@@ -117,10 +118,11 @@ public abstract class State <T> extends RoleNamedProperty {
 			}
 			
 			// Check if value stored in npc database
-			if (npc.stateDataMap.containsKey(uuidString)) {
+			Map<String, String> stateMap = npc.getStateMap();
+			if (stateMap.containsKey(uuidString)) {
 				// Parse & store in cache
-				String storedString = npc.stateDataMap.get(uuidString);
-				T storedValue = fromString(storedString);
+				String storedString = stateMap.get(uuidString);
+				T storedValue = type.valueFromString(storedString);
 				
 				if (storedValue != null) {
 					npcValueMapCache.put(npc, storedValue);
@@ -141,7 +143,7 @@ public abstract class State <T> extends RoleNamedProperty {
 		}
 	}
 	
-	public void setValue(RpgTrait npc, T value) {
+	public void setValue(RpgNpc npc, T value) {
 		switch (storageType) {
 		case GLOBAL:
 			globalValueCache = value;
@@ -151,7 +153,7 @@ public abstract class State <T> extends RoleNamedProperty {
 				@Override
 			    public void run() 
 			    { 
-					String valueString = rpg_npcs.state.State.this.toString(value);
+					String valueString = type.valueToString(value);
 			    	try {
 			    		Connection connection = RPGNPCsPlugin.sql.connect();
 				    	
@@ -177,11 +179,19 @@ public abstract class State <T> extends RoleNamedProperty {
 			npcValueMapCache.put(npc, value);
 			
 			// Store in database
-			npc.stateDataMap.put(uuidString, toString(value));
+			npc.setStateValue(uuidString, type.valueToString(value));
 			break;
 		default:
 			break;
 		}
+	}
+	
+	public SupportedStateType<T> getType() {
+		return type;
+	}
+	
+	public T getDefaultValue() {
+		return defaultValue;
 	}
 	
 	public enum ComparisonResult {
@@ -190,10 +200,4 @@ public abstract class State <T> extends RoleNamedProperty {
 		GREATER_THAN,
 		UNDEFINED
 	}
-	
-	public abstract ComparisonResult compareTo(RpgTrait npc, State <T> state);
-	
-	public abstract T fromString(String string);
-	
-	public abstract String toString(T value);
 }

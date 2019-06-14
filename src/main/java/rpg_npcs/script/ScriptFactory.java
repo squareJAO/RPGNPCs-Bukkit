@@ -5,9 +5,9 @@ import java.util.Map;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
-import rpg_npcs.script.node.ScriptClearNode;
 import rpg_npcs.script.node.ScriptLinearNode;
 import rpg_npcs.script.node.ScriptTextNode;
+import rpg_npcs.script.node.status.ScriptClearNode;
 
 public class ScriptFactory {
 	private final double defaultSpeed;

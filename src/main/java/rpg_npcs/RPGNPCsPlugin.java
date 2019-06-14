@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
@@ -25,10 +24,14 @@ import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryPausePart;
 import rpg_npcs.script.factoryPart.ScriptFactoryQuestionPart;
 import rpg_npcs.script.factoryPart.ScriptFactorySpeedPart;
-import rpg_npcs.script.factoryPart.ScriptFactoryStatePart;
+import rpg_npcs.script.factoryPart.ScriptFactoryStatusPart;
 import rpg_npcs.script.node.command.ScriptCommandNode;
 import rpg_npcs.script.node.command.ScriptCrouchNode;
 import rpg_npcs.script.node.command.ScriptLookCloseNode;
+import rpg_npcs.script.node.command.ScriptStoreNode;
+import rpg_npcs.state.StateFactory;
+import rpg_npcs.state.SupportedStateType;
+import rpg_npcs.state.SupportedStateTypeRecords;
 
 public class RPGNPCsPlugin extends JavaPlugin {
 	public static MySQL sql;
@@ -36,11 +39,14 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	public Map<String, Role> roles = new HashMap<String, Role>();
 
 	protected ScriptFactory scriptFactory;
+	protected StateFactory stateFactory;
 	protected ScriptFactoryCommandPart scriptFactoryCommandPart;
 	
 	final Set<RpgNpc> npcs = new HashSet<RpgNpc>();
 	
+	// Parts that go into factories
 	private Set<ScriptFactoryPart> parts = new HashSet<ScriptFactoryPart>();
+	private SupportedStateTypeRecords supportedStateTypeRecords = new SupportedStateTypeRecords();
 	
 	// Config settings
 	public boolean verboseLogging = true;
@@ -81,8 +87,11 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		addFactoryPart(new ScriptFactorySpeedPart());
 		addFactoryPart(scriptFactoryCommandPart);
 		addFactoryPart(new ScriptFactoryQuestionPart());
-		addFactoryPart(new ScriptFactoryStatePart());
+		addFactoryPart(new ScriptFactoryStatusPart());
 		buildScriptFactory();
+		
+		// Create state factory
+		stateFactory = new StateFactory(supportedStateTypeRecords);
 		
 		// Load all conversations
 		ParseLog log = reloadData();
@@ -90,6 +99,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		
 		// Add all custom traits
 		CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(RpgTrait.class).withName("Rpgnpc"));
+		
+		// Reload config
+		reloadData();
 	}
 	
 	private void createSQL() {
@@ -127,10 +139,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	}
 	
 	private void addDefaultCommandFactoryData() {
-		addScriptCommand("crouch", s -> ScriptCrouchNode.generateCrouchCommandNode(s, false));
-		addScriptCommand("uncrouch", s -> ScriptCrouchNode.generateCrouchCommandNode(s, true));
-		addScriptCommand("look(?:close)?", s -> ScriptLookCloseNode.generateLookCloseCommandNode(s, false));
-		addScriptCommand("lookfar", s -> ScriptLookCloseNode.generateLookCloseCommandNode(s, true));
+		addScriptCommand("crouch", ScriptCrouchNode.class);
+		addScriptCommand("look(?:close)?", ScriptLookCloseNode.class);
+		addScriptCommand("store(?:in)?", ScriptStoreNode.class);
 	}
 	
 	/**
@@ -138,8 +149,12 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	 * @param regexString A regex string to match against command words
 	 * @param function The function, passed a parameter string, which should return a ScriptCommandNode, or null if the parameters are invalid
 	 */
-	public void addScriptCommand(String regexString, Function<String, ScriptCommandNode> generatingFunction) {
-		scriptFactoryCommandPart.addCommandNodeGenerator(Pattern.compile(regexString), generatingFunction);
+	public void addScriptCommand(String regexString, Class<? extends ScriptCommandNode> nodeClass) {
+		scriptFactoryCommandPart.addCommandNodeGenerator(Pattern.compile(regexString), nodeClass);
+	}
+	
+	public void addSupportedStateType(SupportedStateType<?> supportedStateType) {
+		supportedStateTypeRecords.addSupportedType(supportedStateType);
 	}
 	
 	public void printLogToConsole(ParseLog log) {
@@ -183,7 +198,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		ticksPerRangeCheck = getConfig().getInt("ticksPerRangeCheck");
 		
 		// Set new data
-		ConfigParser.ConfigResult result = ConfigParser.reloadConfig(scriptFactory, getConfig());
+		ConfigParser.ConfigResult result = ConfigParser.reloadConfig(scriptFactory, stateFactory, getConfig());
 		roles = result.rolesMap;
 		
 		// Register trigger listeners

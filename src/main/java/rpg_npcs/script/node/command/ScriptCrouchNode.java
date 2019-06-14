@@ -1,37 +1,47 @@
-package rpg_npcs.script.node;
+package rpg_npcs.script.node.command;
 
+import java.util.logging.Level;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import rpg_npcs.Conversation;
+import rpg_npcs.ParsingUtils;
 
-public class ScriptCrouchNode extends ScriptActionNode {
-	protected final boolean _crouch;
-
-	public ScriptCrouchNode(boolean crouch) {
-		super();
-		
-		_crouch = crouch;
+public class ScriptCrouchNode extends ScriptCommandNode {
+	public ScriptCrouchNode(String arguments) {
+		super(arguments);
 	}
 
 	@Override
-	protected void startThis(Conversation conversation) {
-		Player player = getPlayer(conversation.getSpeechBubble());
+	protected void startThisCommand(Conversation conversation, String argumentString) {
+		Entity npcEntity = conversation.getNpc().getEntity();
 		
-		if (player != null) {
-			player.setSneaking(_crouch);
+		if (npcEntity instanceof Player) {
+			((Player) npcEntity).setSneaking(shouldCrouch(argumentString));
 		}
-		
-		onFinished(conversation);
-	}
-
-	@Override
-	public void stopNode(Conversation conversation) {
-		// Stubbington haha love you jjoe xxxxxx
 	}
 
 	@Override
 	protected String getNodeRepresentation() {
-		return _crouch ? "<crouch>" : "<uncrouch>";
+		return "<crouch>";
 	}
-
+	
+	private boolean shouldCrouch(String argumentString) {
+		if (argumentString.length() == 0) {
+			return true;
+		}
+		
+		if (ParsingUtils.isPositive(argumentString)) {
+			return true;
+		}
+		
+		if (ParsingUtils.isNegative(argumentString)) {
+			return false;
+		}
+		
+		Bukkit.getLogger().log(Level.WARNING, "'" + argumentString + "' is not a truthy or falsy value\\nFor: Crouch");
+		return true;
+	}
 }

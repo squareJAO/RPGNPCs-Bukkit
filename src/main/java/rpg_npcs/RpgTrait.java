@@ -14,6 +14,7 @@ import net.citizensnpcs.api.persistence.Persist;
 import net.citizensnpcs.api.persistence.Persister;
 import net.citizensnpcs.api.trait.Trait;
 import net.citizensnpcs.api.util.DataKey;
+import net.citizensnpcs.trait.LookClose;
 import rpg_npcs.role.Role;
 import rpg_npcs.script.Script;
 
@@ -204,5 +205,10 @@ public class RpgTrait extends Trait implements RpgNpc {
 	@Override
 	public Entity getEntity() {
 		return this.getNPC().getEntity();
+	}
+
+	@Override
+	public void lookClose(boolean enabled) {
+		npc.getTrait(LookClose.class).lookClose(enabled);
 	}
 }

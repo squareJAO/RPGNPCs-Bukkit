@@ -2,12 +2,12 @@ package rpg_npcs.script.factoryPart;
 
 import rpg_npcs.script.ScriptFactoryPartData;
 import rpg_npcs.script.ScriptFactoryState;
-import rpg_npcs.script.node.ScriptClearNode;
 import rpg_npcs.script.node.ScriptLinearNode;
+import rpg_npcs.script.node.status.ScriptClearNode;
 
-public class ScriptFactoryStatePart extends ScriptFactoryPart {
+public class ScriptFactoryStatusPart extends ScriptFactoryPart {
 
-	public ScriptFactoryStatePart() {
+	public ScriptFactoryStatusPart() {
 		super('|', '|');
 	}
 

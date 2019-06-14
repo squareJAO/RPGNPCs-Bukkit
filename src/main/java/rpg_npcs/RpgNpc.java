@@ -32,4 +32,6 @@ public interface RpgNpc {
 	public Entity getEntity();
 
 	public String getName();
+	
+	public void lookClose(boolean enabled);
 }

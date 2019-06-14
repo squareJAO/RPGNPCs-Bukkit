@@ -1,7 +1,5 @@
 package rpg_npcs.state;
 
-import java.math.BigDecimal;
-
 import rpg_npcs.ParseLog;
 import rpg_npcs.state.State.StorageType;
 
@@ -11,7 +9,13 @@ public class StateFactory {
 		public State<?> state = null;
 	}
 	
-	public static StateFactoryReturnData makeState(String name, String type, String scopeString, Object defaultValue, String uuid) {
+	private final SupportedStateTypeRecords types;
+	
+	public StateFactory(SupportedStateTypeRecords types) {
+		this.types = types;
+	}
+	
+	public StateFactoryReturnData makeState(String name, String typeName, String scopeString, Object defaultValue, String uuid) {
 		StateFactoryReturnData data = new StateFactoryReturnData();
 		
 		// Resolve scope name
@@ -28,27 +32,23 @@ public class StateFactory {
 			return data;
 		}
 		
-		switch (type.toLowerCase()) {
-		case "number":
-			BigDecimal defaultBigDecimal = BigDecimal.valueOf(0);
-			if (defaultValue != null) {
-				if ((defaultValue instanceof Integer) || (defaultValue instanceof Double) || (defaultValue instanceof String)) {
-					try {
-						defaultBigDecimal = new BigDecimal(defaultValue.toString());
-					} catch (NumberFormatException e) {
-						data.log.addError("Invalid number: '" + defaultValue + "'");
-					}
-				} else {
-					data.log.addError("Unknown number class: '" + defaultValue.getClass().getCanonicalName() + "'");
-				}
-			}
-			data.state = new NumberState(name, defaultBigDecimal, scope, uuid);
-			break;
-
-		default:
+		// Resolve type name
+		SupportedStateType<?> type = types.get(typeName);
+		
+		if (type == null) {
 			data.log.addError("Unknown state type: '" + type + "'");
 			return data;
 		}
+		
+		// Create new type object
+		State<?> newState = type.createState(name, uuid, scope, defaultValue.toString());
+		
+		if (newState == null) {
+			data.log.addError("Error creating state " + name);
+			return data;
+		}
+		
+		data.state = newState;
 		
 		return data;
 	}

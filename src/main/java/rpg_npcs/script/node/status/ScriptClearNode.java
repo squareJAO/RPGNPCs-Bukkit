@@ -1,6 +1,7 @@
-package rpg_npcs.script.node;
+package rpg_npcs.script.node.status;
 
 import rpg_npcs.Conversation;
+import rpg_npcs.script.node.ScriptLinearNode;
 
 public class ScriptClearNode extends ScriptLinearNode {
 

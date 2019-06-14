@@ -10,7 +10,7 @@ import org.bukkit.plugin.Plugin;
 import com.sun.istack.internal.NotNull;
 
 import rpg_npcs.DialogueMapping;
-import rpg_npcs.RpgTrait;
+import rpg_npcs.RpgNpc;
 import rpg_npcs.WeightedSet;
 import rpg_npcs.script.Script;
 import rpg_npcs.state.State;
@@ -130,7 +130,7 @@ public class Role extends RoleNamedProperty {
 		return dialogueMap.zip(getAllVisibleTriggers(), getAllVisibleScripts());
 	}
 	
-	public void registerNpc(RpgTrait npc) {
+	public void registerNpc(RpgNpc npc) {
 		Map<Trigger, WeightedSet<Script>> mapping = getDialogueMap();
 		for (Trigger trigger : mapping.keySet()) {
 			WeightedSet<Script> scriptSet = mapping.get(trigger);
@@ -142,7 +142,7 @@ public class Role extends RoleNamedProperty {
 		}
 	}
 	
-	public void unregisterNpc(RpgTrait npc) {
+	public void unregisterNpc(RpgNpc npc) {
 		for (String triggerName : dialogueMap.keySet()) {
 			Trigger trigger = triggers.get(triggerName);
 			trigger.unregisterNPC(npc);

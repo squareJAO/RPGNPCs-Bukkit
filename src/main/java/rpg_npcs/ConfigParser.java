@@ -40,7 +40,7 @@ public class ConfigParser {
 	
 	static final int[] WEIGHT_MAPPING = {100, 100, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
 	
-	public static ConfigResult reloadConfig(ScriptFactory scriptFactory, Configuration config) {
+	public static ConfigResult reloadConfig(ScriptFactory scriptFactory, StateFactory stateFactory, Configuration config) {
 		/*
 		 * Config design
 		 * [] required
@@ -97,7 +97,7 @@ public class ConfigParser {
 		RolePropertyMap<State<?>> baseStatesMap = new RolePropertyMap<State<?>>();
 		if (config.isConfigurationSection("states")) {
 			ConfigurationSection roleStatesConfigSection = config.getConfigurationSection("states");
-			baseStatesMap = getStates(log, roleStatesConfigSection, Role.DEFAULT_ROLE_NAME_STRING);
+			baseStatesMap = getStates(log, roleStatesConfigSection, stateFactory, Role.DEFAULT_ROLE_NAME_STRING);
 		}
 		
 		// Resolve base triggers
@@ -128,7 +128,7 @@ public class ConfigParser {
 		RolePropertyMap<Role> rolesMap;
 		if (config.contains("roles") && config.isConfigurationSection("roles")) {
 			ConfigurationSection rolesConfigSection = config.getConfigurationSection("roles");
-			rolesMap = getRoles(log, rolesConfigSection, scriptFactory, baseRole, defaultEventPriority);
+			rolesMap = getRoles(log, rolesConfigSection, scriptFactory, stateFactory, baseRole, defaultEventPriority);
 		} else {
 			rolesMap = new RolePropertyMap<Role>();
 			rolesMap.put(baseRole);
@@ -137,7 +137,7 @@ public class ConfigParser {
 		return new ConfigResult(log, rolesMap);
 	}
 	
-	private static RolePropertyMap<State<?>> getStates(ParseLog log, ConfigurationSection statesStatesConfigSection, String scopeName) {
+	private static RolePropertyMap<State<?>> getStates(ParseLog log, ConfigurationSection statesStatesConfigSection, StateFactory stateFactory, String scopeName) {
 		RolePropertyMap<State<?>> statesMap = new RolePropertyMap<State<?>>();
 		Set<String> stateNameStrings = statesStatesConfigSection.getKeys(false);
 		
@@ -181,12 +181,12 @@ public class ConfigParser {
 			String uuid = scopeName + "." + stateNameString + "." + typeString;
 			
 			// Create state
-			StateFactoryReturnData data = StateFactory.makeState(stateNameString, typeString, scopeString, defaultValue, uuid);
+			StateFactoryReturnData data = stateFactory.makeState(stateNameString, typeString, scopeString, defaultValue, uuid);
 			if (data.state != null) {
 				statesMap.put(data.state);
 				log.addInfo(" - type: " + typeString);
 				log.addInfo(" - scope: " + scopeString);
-				log.addInfo(" - default: " + data.state.defaultValue.toString());
+				log.addInfo(" - default: " + data.state.getDefaultValue().toString());
 			}
 			log.add(data.log);
 		}
@@ -286,7 +286,7 @@ public class ConfigParser {
 	}
 
 	
-	private static RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, ScriptFactory scriptFactory, Role baseRole, int defaultEventPriority) {
+	private static RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, ScriptFactory scriptFactory, StateFactory stateFactory, Role baseRole, int defaultEventPriority) {
 		RolePropertyMap<Role> rolesMap = new RolePropertyMap<Role>();
 		Set<String> roleNameStrings = rolesConfigSection.getKeys(false);
 		List<String> rolesToResolve = new LinkedList<>(roleNameStrings);
@@ -372,7 +372,7 @@ public class ConfigParser {
 				RolePropertyMap<State<?>> baseStatesMap = new RolePropertyMap<State<?>>();
 				if (roleConfigSection.isConfigurationSection("states")) {
 					ConfigurationSection roleStatesConfigSection = roleConfigSection.getConfigurationSection("states");
-					baseStatesMap = getStates(log, roleStatesConfigSection, roleNameString);
+					baseStatesMap = getStates(log, roleStatesConfigSection, stateFactory, roleNameString);
 				}
 				
 				// Gather script commands

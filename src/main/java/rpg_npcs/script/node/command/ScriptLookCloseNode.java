@@ -1,39 +1,43 @@
-package rpg_npcs.script.node;
+package rpg_npcs.script.node.command;
 
-import net.citizensnpcs.trait.LookClose;
+import java.util.logging.Level;
+
+import org.bukkit.Bukkit;
+
 import rpg_npcs.Conversation;
-import rpg_npcs.SpeechBubble;
+import rpg_npcs.ParsingUtils;
 
-public class ScriptLookCloseNode extends ScriptActionNode {
-	protected final boolean _enable;
-	
-	public ScriptLookCloseNode(boolean enable) {
-		super();
-		
-		_enable = enable;
+public class ScriptLookCloseNode extends ScriptCommandNode {
+	public ScriptLookCloseNode(String argumentString) {
+		super(argumentString);
 	}
 
 	@Override
-	protected void startThis(Conversation conversation) {
-		SpeechBubble bubble = conversation.getSpeechBubble();
-		
-		boolean lookingClose = getNPC(bubble).getTrait(LookClose.class).toggle();
-		if (_enable ^ lookingClose) {
-			getNPC(bubble).getTrait(LookClose.class).toggle();
-		}
-		
-		onFinished(conversation);
-	}
-
-	@Override
-	public void stopNode(Conversation conversation) {
-		// Stub
+	protected void startThisCommand(Conversation conversation, String argumentString) {
+		boolean enable = shouldEnable(argumentString);
+		conversation.getNpc().lookClose(enable);
 	}
 
 	@Override
 	protected String getNodeRepresentation() {
-		// TODO Auto-generated method stub
-		return _enable ? "<Turn to face nearest player>" : "<Stop facing nearest player>";
+		return "<Look Close>";
+	}
+
+	private boolean shouldEnable(String argumentString) {
+		if (argumentString.length() == 0) {
+			return true;
+		}
+		
+		if (ParsingUtils.isPositive(argumentString)) {
+			return true;
+		}
+		
+		if (ParsingUtils.isNegative(argumentString)) {
+			return false;
+		}
+		
+		Bukkit.getLogger().log(Level.WARNING, "'" + argumentString + "' is not a truthy or falsy value\nFor: LookClose");
+		return true;
 	}
 
 }

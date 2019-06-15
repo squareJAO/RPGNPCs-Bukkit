@@ -10,3 +10,8 @@ commands:
       usage: /reloadRPGNPCs
       permission: RPGNPCs.reload
       permission-message: You don't have permission to do that
+   RPGNPC:
+      description: Base command for most actions
+      usage: /RPGNPC
+      permission: RPGNPCs.edit
+      permission-message: You don't have permission to do that

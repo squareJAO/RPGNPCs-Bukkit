@@ -1,10 +1,13 @@
-package rpg_npcs;
+package rpg_npcs.command;
 
 import java.util.List;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+
+import rpg_npcs.ParseLog;
+import rpg_npcs.RPGNPCsPlugin;
 
 public class CommandReloadScripts implements TabExecutor {
 	RPGNPCsPlugin instance;

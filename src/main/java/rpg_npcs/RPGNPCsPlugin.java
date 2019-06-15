@@ -13,10 +13,14 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.TraitInfo;
+import rpg_npcs.command.CommandEditRpgNpc;
+import rpg_npcs.command.CommandReloadScripts;
 import rpg_npcs.role.Role;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.factoryPart.ScriptFactoryCommandPart;
@@ -37,12 +41,12 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	public static MySQL sql;
 	
 	public Map<String, Role> roles = new HashMap<String, Role>();
+	public final Set<RpgNpc> npcs = new HashSet<RpgNpc>();
 
 	protected ScriptFactory scriptFactory;
 	protected StateFactory stateFactory;
 	protected ScriptFactoryCommandPart scriptFactoryCommandPart;
 	
-	final Set<RpgNpc> npcs = new HashSet<RpgNpc>();
 	
 	// Parts that go into factories
 	private Set<ScriptFactoryPart> parts = new HashSet<ScriptFactoryPart>();
@@ -77,6 +81,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		CommandReloadScripts commandReloadConversations = new CommandReloadScripts(this);
 		getCommand("reloadRPGNPCs").setTabCompleter(commandReloadConversations);
 		getCommand("reloadRPGNPCs").setExecutor(commandReloadConversations);
+		CommandEditRpgNpc commandEditRpgNpc = new CommandEditRpgNpc();
+		getCommand("RPGNPC").setTabCompleter(commandEditRpgNpc);
+		getCommand("RPGNPC").setExecutor(commandEditRpgNpc);
 		
 		// Create default factory parts
 		scriptFactoryCommandPart = new ScriptFactoryCommandPart();
@@ -232,5 +239,18 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		} else {
 			npc.setRole(roles.get(Role.DEFAULT_ROLE_NAME_STRING));
 		}
+	}
+	
+	public RpgNpc getSelectedRpgNpc(CommandSender sender) {
+		// Check for citizens2
+		NPC selectedNpc = CitizensAPI.getDefaultNPCSelector().getSelected(sender);
+		
+		if (selectedNpc != null) {
+			if (selectedNpc.hasTrait(RpgTrait.class)) {
+				return selectedNpc.getTrait(RpgTrait.class);
+			}
+		}
+		
+		return null;
 	}
 }

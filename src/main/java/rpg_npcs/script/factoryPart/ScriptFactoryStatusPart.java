@@ -1,8 +1,10 @@
 package rpg_npcs.script.factoryPart;
 
+import rpg_npcs.script.Script;
 import rpg_npcs.script.ScriptFactoryPartData;
 import rpg_npcs.script.ScriptFactoryState;
-import rpg_npcs.script.node.ScriptLinearNode;
+import rpg_npcs.script.node.ScriptNode;
+import rpg_npcs.script.node.status.ScriptBranchNode;
 import rpg_npcs.script.node.status.ScriptClearNode;
 
 public class ScriptFactoryStatusPart extends ScriptFactoryPart {
@@ -13,15 +15,19 @@ public class ScriptFactoryStatusPart extends ScriptFactoryPart {
 
 	@Override
 	protected ScriptFactoryPartData generateNode(ScriptFactoryState state, String instruction) {
-		ScriptLinearNode newNode = null;
+		ScriptNode newNode = null;
 		
-		// Parse command
-		switch (instruction) {
-		case "": // Clear
+		if (instruction == "") {
 			newNode = new ScriptClearNode();
-			break;
-		default:
-			return ScriptFactoryPartData.fromError("Unknown state: '" + instruction + "'");
+		} else {
+			// Interpret as node to jump to
+			if (!state.doesScriptExist(instruction)) {
+				return ScriptFactoryPartData.fromError("Unknown script to branch to: " + instruction);
+			}
+			
+			Script script = state.getScript(instruction);
+			newNode = new ScriptBranchNode(script.initialNode);
+			state.BranchDone = true;
 		}
 		
 		return ScriptFactoryPartData.fromNode(newNode);

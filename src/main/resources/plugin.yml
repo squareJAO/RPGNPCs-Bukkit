@@ -5,13 +5,15 @@ api-version: 1.13
 depend: [Citizens, HolographicDisplays]
 softdepend: [PlaceholderAPI]
 commands:
-   reloadRPGNPCs:
-      description: Reloads all rpg npc data
-      usage: /reloadRPGNPCs
-      permission: RPGNPCs.reload
+   calcuate:
+      description: Resolves a given expression to a value
+      usage: /calcuate <expression>
+      aliases: calc
+      permission: RPGNPCs.calculate
       permission-message: You don't have permission to do that
-   RPGNPC:
+   rpgnpc:
       description: Base command for most actions
-      usage: /RPGNPC
+      usage: /rpgnpc <subcommand>
+      aliases: rpgnpcs
       permission: RPGNPCs.edit
       permission-message: You don't have permission to do that

@@ -53,7 +53,7 @@ public class ConfigParserTest {
 		 * role 0 has 0 scripts, etc.
 		 */
 		
-		for (int roles = 0; roles < 100; roles++) {
+		for (int roles = 0; roles < 100; roles = roles * 2 + 1) {
 			// Create test config data
 			Configuration testConfigurationSection = new MemoryConfiguration();
 			ConfigurationSection roleConfigurationSection = testConfigurationSection.createSection("roles");

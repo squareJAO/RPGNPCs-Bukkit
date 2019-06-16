@@ -10,6 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 
 import net.md_5.bungee.api.ChatColor;
+import rpg_npcs.ParseLog;
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.role.Role;
@@ -18,14 +19,18 @@ import rpg_npcs.state.State;
 import rpg_npcs.state.State.StorageType;
 
 public class CommandEditRpgNpc implements TabExecutor {
-	private static final String[] SECONDARY_COMMAND_STRINGS = new String[] {"list", "set"};
-
+	private final RPGNPCsPlugin plugin;
+	
+	public CommandEditRpgNpc(RPGNPCsPlugin plugin) {
+		this.plugin = plugin;
+	}
+	
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
 		List<String> list = new ArrayList<String>();
 		
 		if (args.length == 1) {
-			for (String string : SECONDARY_COMMAND_STRINGS) {
+			for (String string : new String[] {"list", "set", "reload"}) {
 				if (string.startsWith(args[0])) {
 					list.add(string);
 				}
@@ -43,8 +48,6 @@ public class CommandEditRpgNpc implements TabExecutor {
 						list.add(string);
 					}
 				}
-			} else {
-				list.add(args[0]);
 			}
 		} else if (args.length == 3) {
 			if (args[0].equalsIgnoreCase("set")) {
@@ -69,7 +72,6 @@ public class CommandEditRpgNpc implements TabExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		// Get selected npc
-		RPGNPCsPlugin plugin = (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
 		RpgNpc selectedNpc = plugin.getSelectedRpgNpc(sender);
 		
 		if (args.length == 0) {
@@ -95,10 +97,10 @@ public class CommandEditRpgNpc implements TabExecutor {
 			
 			switch (args[1].toLowerCase()) {
 			case "npcs":
-				return listNPCs(plugin, sender);
+				return listNPCs(sender);
 				
 			case "states":
-				return listStates(plugin, sender, selectedNpc);
+				return listStates(sender, selectedNpc);
 
 			default:
 				sender.sendMessage("Invalid argument: " + args[1]);
@@ -118,13 +120,29 @@ public class CommandEditRpgNpc implements TabExecutor {
 				sender.sendMessage("Invalid argument to set: " + args[1]);
 				return false;
 			}
+		case "reload":
+			if (args.length >= 1) {
+				sender.sendMessage(ChatColor.RED + "Unused arguments beyond '" + args[0] + "'");
+			}
+			
+			sender.sendMessage("Reloading npcs...");
+			
+			// Regenerate the dialogue trees
+			ParseLog reloadLog = plugin.reloadData();
+			
+			// Print log
+			plugin.printLogToConsole(reloadLog);
+			sender.sendMessage(reloadLog.getFormattedString());
+			sender.sendMessage("Reloaded.");
+			
+			return true;
 		default:
 			sender.sendMessage("Invalid subcommand: " + args[0]);
 			return false;
 		}
 	}
 
-	private boolean listNPCs(RPGNPCsPlugin plugin, CommandSender sender) {
+	private boolean listNPCs(CommandSender sender) {
 		sender.sendMessage("Found " + plugin.npcs.size() + " RpgNpc(s)");
 		for (RpgNpc npc : plugin.npcs) {
 			sender.sendMessage(" - Name: " + npc.getName() + "\n    Role: " + npc.getRole().nameString);
@@ -133,7 +151,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 		return true;
 	}
 	
-	private boolean listStates(RPGNPCsPlugin plugin, CommandSender sender, RpgNpc selectedNpc) {
+	private boolean listStates(CommandSender sender, RpgNpc selectedNpc) {
 		Role role;
 		if (selectedNpc == null) {
 			sender.sendMessage("No npc selected, global states:");

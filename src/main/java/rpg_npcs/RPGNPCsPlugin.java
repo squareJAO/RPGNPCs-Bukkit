@@ -19,8 +19,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.TraitInfo;
+import rpg_npcs.command.CommadCalculate;
 import rpg_npcs.command.CommandEditRpgNpc;
-import rpg_npcs.command.CommandReloadScripts;
 import rpg_npcs.role.Role;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.factoryPart.ScriptFactoryCommandPart;
@@ -79,12 +79,12 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		createSQL();
 		
 		// Add commands
-		CommandReloadScripts commandReloadConversations = new CommandReloadScripts(this);
-		getCommand("reloadRPGNPCs").setTabCompleter(commandReloadConversations);
-		getCommand("reloadRPGNPCs").setExecutor(commandReloadConversations);
-		CommandEditRpgNpc commandEditRpgNpc = new CommandEditRpgNpc();
+		CommandEditRpgNpc commandEditRpgNpc = new CommandEditRpgNpc(this);
 		getCommand("RPGNPC").setTabCompleter(commandEditRpgNpc);
 		getCommand("RPGNPC").setExecutor(commandEditRpgNpc);
+		CommadCalculate commandCalculate = new CommadCalculate();
+		getCommand("calculate").setTabCompleter(commandCalculate);
+		getCommand("calculate").setExecutor(commandCalculate);
 		
 		// Create default factory parts
 		scriptFactoryCommandPart = new ScriptFactoryCommandPart();

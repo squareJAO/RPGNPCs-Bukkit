@@ -1,7 +1,5 @@
 package rpg_npcs;
 
-import java.util.Map;
-
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -23,10 +21,6 @@ public interface RpgNpc {
 	
 	public void startConversation(Script script, Player player, int priority);
 	
-	public Map<String, String> getStateMap();
-	
-	public void setStateValue(String key, String value);
-	
 	public boolean isSpawned();
 	
 	public Entity getEntity();
@@ -34,4 +28,6 @@ public interface RpgNpc {
 	public String getName();
 	
 	public void lookClose(boolean enabled);
+	
+	public String getUUIDString();
 }

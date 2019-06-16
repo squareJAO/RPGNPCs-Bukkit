@@ -53,6 +53,7 @@ public class MySQL {
 	private Connection connectSQL() throws SQLException {
         if (!isConnected()) {
             con = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database, username, password);
+            con.setAutoCommit(true);
         }
         
         return con;
@@ -61,6 +62,7 @@ public class MySQL {
     private Connection connectSQLite() throws SQLException {
         if (!isConnected()) {
             con = DriverManager.getConnection("jdbc:sqlite:" + path);
+            con.setAutoCommit(true);
         }
         
         return con;

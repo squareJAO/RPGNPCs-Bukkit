@@ -18,7 +18,7 @@ import rpg_npcs.role.RoleNamedProperty;
 public class State <T> extends RoleNamedProperty {
 	private final StorageType storageType; // Global = same for all npcs with a role, Npc = unique to NPCs
 	
-	private final String uuidString; // The identifier, unique to this state, used when storing this state in the database
+	private final String stateUUIDString; // The identifier, unique to this state, used when storing this state in the database
 	
 	private final SupportedStateType<T> type;
 	
@@ -37,14 +37,14 @@ public class State <T> extends RoleNamedProperty {
 		
 		this.defaultValue = defaultValue;
 		this.storageType = storageType;
-		this.uuidString = uuid;
+		this.stateUUIDString = uuid;
 		this.type = type;
 		
 		// Initialise variables
 		switch (storageType) {
 		case GLOBAL:
     		globalValueCache = defaultValue; // Assume default until requests cleared
-			getStoredGlobalValue();
+    		getStoredGlobalValueAsync();
 			break;
 		case NPC:
 			this.npcValueMapCache = new HashMap<RpgNpc, T>();
@@ -52,55 +52,66 @@ public class State <T> extends RoleNamedProperty {
 		}
 	}
 	
-	private void getStoredGlobalValue() {
+	private void getStoredGlobalValueAsync() {
 		// load from database using multithreading
 		new Thread() {
 			@Override
 		    public void run() 
 		    {
-		    	try {
-		    		Connection connection = RPGNPCsPlugin.sql.connect();
-			    	
-		    		String selectCommand = "SELECT value FROM global_states WHERE state_uuid = ?";
-			    	PreparedStatement selectStatement = connection.prepareStatement(selectCommand);
-			    	
-			    	selectStatement.setString(1, uuidString);
-			    	
-			    	ResultSet results = selectStatement.executeQuery();
-			    	
-			    	if (results.next()) { // If results
-						String valueString = results.getString("value");
-						T value = type.valueFromString(valueString);
-						
-						if (value == null) {
-							Bukkit.getLogger().log(Level.WARNING, "Could not parse stored state value '" + valueString +
-									"' to " + defaultValue.getClass().getCanonicalName());
-
-				    		globalValueCache = defaultValue;
-						} else {
-							globalValueCache = value;
-						}
-		    		} else { // If 0 results
-			    		globalValueCache = defaultValue;
-			    		
-			    		String valueString = type.valueToString(defaultValue);
-			    		
-			    		String insertCommand = "INSERT INTO global_states (state_uuid, value) VALUES (?, ?)";
-				    	PreparedStatement insertStatement = connection.prepareStatement(insertCommand);
-				    	
-				    	insertStatement.setString(1, uuidString);
-				    	insertStatement.setString(2, valueString);
-				    	
-				    	insertStatement.execute();
-		    		}
-			    	
-			    	connection.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-					return;
-				}
+	    		globalValueCache = getStoredValue(stateUUIDString);
 		    }
 		}.run();
+	}
+	
+	private T getStoredValue(String uuidString) {
+		T value;
+		
+    	try {
+    		Connection connection = RPGNPCsPlugin.sql.connect();
+	    	
+    		String selectCommand = "SELECT value FROM global_states WHERE state_uuid = ?";
+	    	PreparedStatement selectStatement = connection.prepareStatement(selectCommand);
+	    	
+	    	selectStatement.setString(1, uuidString);
+	    	
+	    	ResultSet results = selectStatement.executeQuery();
+	    	
+	    	if (results.next()) { // If results
+				String valueString = results.getString("value");
+				value = type.valueFromString(valueString);
+				
+				if (value == null) {
+					Bukkit.getLogger().log(Level.WARNING, "Could not parse stored state value '" + valueString +
+							"' to " + defaultValue.getClass().getCanonicalName());
+
+					value = defaultValue;
+				}
+    		} else { // If 0 results, store default value
+	    		String valueString = type.valueToString(defaultValue);
+	    		
+	    		String insertCommand = "INSERT INTO global_states (state_uuid, value) VALUES (?, ?)";
+		    	PreparedStatement insertStatement = connection.prepareStatement(insertCommand);
+		    	
+		    	insertStatement.setString(1, uuidString);
+		    	insertStatement.setString(2, valueString);
+		    	
+		    	insertStatement.execute();
+		    	
+		    	value = defaultValue;
+    		}
+	    	
+	    	connection.close();
+	    	
+	    	return value;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	
+		return defaultValue;
+	}
+	
+	private String makeNpcUuidString(RpgNpc npc) {
+		return npc.getUUIDString() + "." + stateUUIDString;
 	}
 	
 	public T getValue(RpgNpc npc) {
@@ -115,26 +126,8 @@ public class State <T> extends RoleNamedProperty {
 				return npcValueMapCache.get(npc);
 			}
 			
-			// Check if value stored in npc database
-			Map<String, String> stateMap = npc.getStateMap();
-			if (stateMap.containsKey(uuidString)) {
-				// Parse & store in cache
-				String storedString = stateMap.get(uuidString);
-				T storedValue = type.valueFromString(storedString);
-				
-				if (storedValue != null) {
-					npcValueMapCache.put(npc, storedValue);
-					
-					// Return parsed value
-					return storedValue;
-				} else {
-					Bukkit.getLogger().log(Level.WARNING, "Could not parse stored state value '" + storedString +
-							"' to " + defaultValue.getClass().getCanonicalName());
-				}
-			}
-			
-			// Return the default value if no other value was found
-			return defaultValue;
+			// First time a value is requested a blocking request is unavoidable
+			return getStoredValue(makeNpcUuidString(npc));
 			
 		default:
 			throw new NotImplementedException();
@@ -142,46 +135,50 @@ public class State <T> extends RoleNamedProperty {
 	}
 	
 	public void setValue(RpgNpc npc, T value) {
+		String valueString = type.valueToString(value);
+		
+		String storageUUIDString;
 		switch (storageType) {
 		case GLOBAL:
-			globalValueCache = value;
-			
-			// Store in database using multithreading
-			new Thread() {
-				@Override
-			    public void run() 
-			    { 
-					String valueString = type.valueToString(value);
-			    	try {
-			    		Connection connection = RPGNPCsPlugin.sql.connect();
-				    	
-			    		String command = "UPDATE global_states SET value = ? WHERE state_uuid = ?";
-				    	PreparedStatement statement = connection.prepareStatement(command);
-				    	
-				    	statement.setString(1, valueString);
-				    	statement.setString(2, uuidString);
-				    	
-				    	statement.executeUpdate();
-				    	
-				    	connection.close();
-					} catch (SQLException e) {
-						e.printStackTrace();
-						return;
-					}
-			    }
-			}.run();
-			
-			return;
+			storageUUIDString = stateUUIDString;
+			break;
 		case NPC:
-			// Store in cache
-			npcValueMapCache.put(npc, value);
-			
-			// Store in database
-			npc.setStateValue(uuidString, type.valueToString(value));
+			storageUUIDString = makeNpcUuidString(npc);
 			break;
 		default:
-			break;
+			throw new NotImplementedException("Storage type " + storageType.toString() + " saving not supported");
 		}
+		
+		// Store in database using multithreading
+		new Thread() {
+			@Override
+		    public void run() 
+		    { 
+				// Check that an entry exists and that it needs updating
+				T storedValue = getStoredValue(storageUUIDString);
+				
+				if (storedValue.equals(value)) {
+					return;
+				}
+				
+		    	try {
+		    		Connection connection = RPGNPCsPlugin.sql.connect();
+			    	
+		    		String command = "UPDATE global_states SET value = ? WHERE state_uuid = ?";
+			    	PreparedStatement statement = connection.prepareStatement(command);
+			    	
+			    	statement.setString(1, valueString);
+			    	statement.setString(2, storageUUIDString);
+			    	
+			    	statement.executeUpdate();
+			    	
+			    	connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					return;
+				}
+		    }
+		}.run();
 	}
 	
 	public SupportedStateType<T> getType() {

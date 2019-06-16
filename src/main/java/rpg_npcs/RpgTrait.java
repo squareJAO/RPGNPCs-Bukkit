@@ -1,59 +1,19 @@
 package rpg_npcs;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
-import net.citizensnpcs.api.persistence.DelegatePersistence;
 import net.citizensnpcs.api.persistence.Persist;
-import net.citizensnpcs.api.persistence.Persister;
 import net.citizensnpcs.api.trait.Trait;
-import net.citizensnpcs.api.util.DataKey;
 import net.citizensnpcs.trait.LookClose;
 import rpg_npcs.role.Role;
 import rpg_npcs.script.Script;
 
 public class RpgTrait extends Trait implements RpgNpc {
-	public static class DataMapPersister implements Persister<Map<String, String>> {
-        private static JSONParser parser = new JSONParser();
-        
-		@Override
-		public Map<String, String> create(DataKey root) {
-			JSONObject jsonObject;
-			try {
-				jsonObject = (JSONObject) parser.parse(root.getString("StateData"));
-			} catch (ParseException e) {
-				e.printStackTrace();
-				return new HashMap<String, String>();
-			}
-
-			Map<String, String> map = new HashMap<String, String>();
-			for (Object keyObject : jsonObject.keySet()) {
-				String keyString = keyObject.toString();
-				
-				Object valueObject = jsonObject.get(keyObject);
-				String valueString = valueObject.toString(); // Trust the user didn't malform the data
-				
-				map.put(keyString, valueString);
-			}
-			
-			return map;
-		}
-		
-		@Override
-		public void save(Map<String, String> map, DataKey root) {
-			root.setString("StateData", JSONObject.toJSONString(map));
-		}
-	}
-	
 	protected static Random rng = new Random();
 	
 	protected RPGNPCsPlugin instancingPlugin;
@@ -62,10 +22,6 @@ public class RpgTrait extends Trait implements RpgNpc {
 	
 	@Persist("stopRange")
 	protected int storedStopRange = -1;
-	
-	@Persist("stateData")
-	@DelegatePersistence(DataMapPersister.class)
-	protected Map<String, String> stateDataMap = new HashMap<String, String>();
 	
 	// Used for speech bubbles
 	protected SpeechBubble speechBubble;
@@ -187,16 +143,6 @@ public class RpgTrait extends Trait implements RpgNpc {
 	}
 
 	@Override
-	public Map<String, String> getStateMap() {
-		return stateDataMap;
-	}
-
-	@Override
-	public void setStateValue(String key, String value) {
-		stateDataMap.put(key, value);
-	}
-
-	@Override
 	public boolean isSpawned() {
 		return this.getNPC().isSpawned();
 	}
@@ -209,5 +155,10 @@ public class RpgTrait extends Trait implements RpgNpc {
 	@Override
 	public void lookClose(boolean enabled) {
 		npc.getTrait(LookClose.class).lookClose(enabled);
+	}
+
+	@Override
+	public String getUUIDString() {
+		return "Citizens2NPC_" + this.npc.getId();
 	}
 }

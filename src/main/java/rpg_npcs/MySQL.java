@@ -67,7 +67,17 @@ public class MySQL {
     }
 
     public boolean isConnected() {
-        return con != null;
+    	if (con == null) {
+			return false;
+		}
+    	
+        try {
+			return !con.isClosed();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			con = null;
+			return false;
+		}
     }
 
     public Connection getConnection() {

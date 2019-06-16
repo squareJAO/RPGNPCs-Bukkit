@@ -7,8 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.Plugin;
 
-import com.sun.istack.internal.NotNull;
-
 import rpg_npcs.DialogueMapping;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.WeightedSet;
@@ -25,9 +23,9 @@ public class Role extends RoleNamedProperty {
 	
 	public static final String DEFAULT_ROLE_NAME_STRING = "__baseRole__";
 	
-	public Role(String roleName, @NotNull RolePropertyMap<Trigger> triggers, @NotNull Set<Role> parentRoles,
-			@NotNull DialogueMapping dialogueMap, @NotNull RolePropertyMap<Script> scripts,
-			@NotNull RolePropertyMap<State<?>> states) {
+	public Role(String roleName, RolePropertyMap<Trigger> triggers, Set<Role> parentRoles,
+			DialogueMapping dialogueMap, RolePropertyMap<Script> scripts,
+			RolePropertyMap<State<?>> states) {
 		super(roleName);
 		this.triggers = triggers;
 		this.parentRoles = parentRoles;

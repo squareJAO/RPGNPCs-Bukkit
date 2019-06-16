@@ -36,7 +36,7 @@ public class StateFactory {
 		SupportedStateType<?> type = types.get(typeName);
 		
 		if (type == null) {
-			data.log.addError("Unknown state type: '" + type + "'");
+			data.log.addError("Unknown state type: '" + typeName + "'");
 			return data;
 		}
 		

@@ -289,7 +289,7 @@ public class ConfigParser {
 	private static RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, ScriptFactory scriptFactory, StateFactory stateFactory, Role baseRole, int defaultEventPriority) {
 		RolePropertyMap<Role> rolesMap = new RolePropertyMap<Role>();
 		Set<String> roleNameStrings = rolesConfigSection.getKeys(false);
-		List<String> rolesToResolve = new LinkedList<>(roleNameStrings);
+		List<String> rolesToResolve = new LinkedList<String>(roleNameStrings);
 		
 		rolesMap.put(baseRole);
 		roleNameStrings.add(baseRole.nameString);

@@ -33,6 +33,7 @@ import rpg_npcs.script.node.command.ScriptCommandNode;
 import rpg_npcs.script.node.command.ScriptCrouchNode;
 import rpg_npcs.script.node.command.ScriptLookCloseNode;
 import rpg_npcs.script.node.command.ScriptStoreNode;
+import rpg_npcs.state.NumberStateType;
 import rpg_npcs.state.StateFactory;
 import rpg_npcs.state.SupportedStateType;
 import rpg_npcs.state.SupportedStateTypeRecords;
@@ -96,6 +97,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		addFactoryPart(new ScriptFactoryQuestionPart());
 		addFactoryPart(new ScriptFactoryStatusPart());
 		buildScriptFactory();
+		
+		// Add default state types
+		addSupportedStateType(new NumberStateType());
 		
 		// Create state factory
 		stateFactory = new StateFactory(supportedStateTypeRecords);

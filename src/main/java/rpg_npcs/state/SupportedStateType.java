@@ -6,7 +6,6 @@ import org.bukkit.Bukkit;
 
 import com.fathzer.soft.javaluator.AbstractEvaluator;
 import com.fathzer.soft.javaluator.StaticVariableSet;
-import com.sun.istack.internal.NotNull;
 
 import rpg_npcs.RpgNpc;
 import rpg_npcs.role.RolePropertyMap;
@@ -37,7 +36,7 @@ public abstract class SupportedStateType<T> {
 		return typeClass;
 	}
 	
-	public final State<T> createState(@NotNull String name, @NotNull String uuid, StorageType storageType, String defaultValueString) {
+	public final State<T> createState(String name, String uuid, StorageType storageType, String defaultValueString) {
 		T defaultValue = valueFromString(defaultValueString);
 		
 		if (defaultValue == null) {

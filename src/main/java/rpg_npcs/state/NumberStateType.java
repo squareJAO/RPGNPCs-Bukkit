@@ -4,8 +4,8 @@ import com.fathzer.soft.javaluator.DoubleEvaluator;
 
 import rpg_npcs.state.State.ComparisonResult;
 
-public class NumberState extends SupportedStateType<Double> {
-	public NumberState() {
+public class NumberStateType extends SupportedStateType<Double> {
+	public NumberStateType() {
 		super("number", new DoubleEvaluator(), Double.class);
 	}
 

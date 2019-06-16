@@ -8,6 +8,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import net.citizensnpcs.api.persistence.DelegatePersistence;
 import net.citizensnpcs.api.persistence.Persist;
@@ -20,19 +23,26 @@ import rpg_npcs.script.Script;
 
 public class RpgTrait extends Trait implements RpgNpc {
 	public static class DataMapPersister implements Persister<Map<String, String>> {
-		// WARNING: Backslash hell, tread carefully
-		
+        private static JSONParser parser = new JSONParser();
+        
 		@Override
 		public Map<String, String> create(DataKey root) {
+			JSONObject jsonObject;
+			try {
+				jsonObject = (JSONObject) parser.parse(root.getString("StateData"));
+			} catch (ParseException e) {
+				e.printStackTrace();
+				return new HashMap<String, String>();
+			}
+
 			Map<String, String> map = new HashMap<String, String>();
-			
-			String stateNameString = root.getString("StateNames");
-			
-			String[] nameStrings = stateNameString.split("[^\\\\];"); // Split on non-escaped semicolons
-			
-			for (String nameString : nameStrings) {
-				nameString = nameString.replace("\\;", ";").replace("\\\\", "\\"); // Unescapes string, Replaces \; with ; and \\ with \
-				map.put(nameString, root.getString(nameString));
+			for (Object keyObject : jsonObject.keySet()) {
+				String keyString = keyObject.toString();
+				
+				Object valueObject = jsonObject.get(keyObject);
+				String valueString = valueObject.toString(); // Trust the user didn't malform the data
+				
+				map.put(keyString, valueString);
 			}
 			
 			return map;
@@ -40,18 +50,7 @@ public class RpgTrait extends Trait implements RpgNpc {
 		
 		@Override
 		public void save(Map<String, String> map, DataKey root) {
-			String[] nameStrings = map.keySet().toArray(new String[map.size()]);
-			
-			for (int i = 0; i < nameStrings.length; i++) {
-				nameStrings[i] = nameStrings[i].replace("\\", "\\\\").replace(";", "\\;"); // Escapes string, Replaces ; with \; and \ with \\
-			}
-			
-			String stateNameString = String.join(";", nameStrings);
-			root.setString("StateNames", stateNameString);
-			
-			for (String key : map.keySet()) {
-				root.setString(key, map.get(key));
-			}
+			root.setString("StateData", JSONObject.toJSONString(map));
 		}
 	}
 	
@@ -66,7 +65,7 @@ public class RpgTrait extends Trait implements RpgNpc {
 	
 	@Persist("stateData")
 	@DelegatePersistence(DataMapPersister.class)
-	protected Map<String, String> stateDataMap;
+	protected Map<String, String> stateDataMap = new HashMap<String, String>();
 	
 	// Used for speech bubbles
 	protected SpeechBubble speechBubble;

@@ -11,8 +11,6 @@ import java.util.logging.Level;
 import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.Bukkit;
 
-import com.sun.istack.internal.NotNull;
-
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.role.RoleNamedProperty;
@@ -34,7 +32,7 @@ public class State <T> extends RoleNamedProperty {
 		NPC
 	}
 	
-	public State(@NotNull String name, @NotNull String uuid, SupportedStateType<T> type, StorageType storageType, T defaultValue) {
+	public State(String name, String uuid, SupportedStateType<T> type, StorageType storageType, T defaultValue) {
 		super(name);
 		
 		this.defaultValue = defaultValue;
@@ -192,6 +190,10 @@ public class State <T> extends RoleNamedProperty {
 	
 	public T getDefaultValue() {
 		return defaultValue;
+	}
+	
+	public StorageType getStorageType() {
+		return storageType;
 	}
 	
 	public enum ComparisonResult {

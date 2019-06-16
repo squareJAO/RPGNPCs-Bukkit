@@ -12,7 +12,7 @@ public class WeightedSet <T extends Object> {
         T object;
     }
 
-    private List<Entry> entries = new ArrayList<>();
+    private List<Entry> entries = new ArrayList<Entry>();
     private int accumulatedWeight;
     private Random rand = new Random();
 

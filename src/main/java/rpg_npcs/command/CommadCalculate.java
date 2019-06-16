@@ -8,6 +8,8 @@ import org.bukkit.command.TabExecutor;
 
 import com.fathzer.soft.javaluator.DoubleEvaluator;
 
+import net.md_5.bungee.api.ChatColor;
+
 public class CommadCalculate implements TabExecutor {
 	private final DoubleEvaluator evaluator = new DoubleEvaluator();
 
@@ -23,8 +25,13 @@ public class CommadCalculate implements TabExecutor {
 		}
 		
 		String expression = String.join(" ", args);
-		double result = evaluator.evaluate(expression);
-		sender.sendMessage(" = " + result);
+		
+		try {
+			double result = evaluator.evaluate(expression);
+			sender.sendMessage(" = " + result);
+		} catch (IllegalArgumentException e) {
+			sender.sendMessage(ChatColor.RED + "Error while executing command: " + e.getMessage());
+		}
 		
 		return true;
 	}

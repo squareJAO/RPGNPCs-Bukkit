@@ -197,24 +197,29 @@ public class CommandEditRpgNpc implements TabExecutor {
 		}
 		
 		String variableNameString = args[2];
-		String variableValueString = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+		String expression = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
 		
 		RolePropertyMap<State<?>> statesMap = selectedNpc.getRole().getAllVisibleStates();
 		if (!statesMap.containsKey(variableNameString)) {
-			sender.sendMessage("State " + variableNameString + " not found");
+			sender.sendMessage(ChatColor.RED + "State " + variableNameString + " not found");
 			return false;
 		}
 		
 		State<?> stateToStoreIn = statesMap.get(variableNameString);
-		return storeGivenValueInState(sender, variableValueString, selectedNpc, stateToStoreIn);
+		try {
+			return storeGivenValueInState(sender, expression, selectedNpc, stateToStoreIn);
+		} catch (IllegalArgumentException e) {
+			sender.sendMessage(ChatColor.RED + "Expression '" + expression + "' cannot be resolved: " + e.getMessage());
+			return true;
+		}
 	}
 	
 	// Typed function workaround to appease compiler
-	private <T> boolean storeGivenValueInState(CommandSender sender, String valueString, RpgNpc npc, State<T> state) {
-		T value = state.getType().executeTypedExpression(npc, valueString);
+	private <T> boolean storeGivenValueInState(CommandSender sender, String expression, RpgNpc npc, State<T> state) throws IllegalArgumentException{
+		T value = state.getType().executeTypedExpression(npc, expression);
 		
 		if (value == null) {
-			sender.sendMessage("'" + valueString + "' cannot be converted to " + state.getType().getDataTypeName());
+			sender.sendMessage(ChatColor.RED + "'" + expression + "' cannot be converted to " + state.getType().getDataTypeName());
 			return false;
 		}
 		

@@ -42,11 +42,16 @@ public class ScriptStoreNode extends ScriptCommandNode {
 			return;
 		}
 		
-		executeAndStore(resultState, conversation, expression);
+		try {
+			executeAndStore(resultState, conversation, expression);
+		} catch (IllegalArgumentException e) {
+			Bukkit.getLogger().log(Level.WARNING, "Unable to resolve expression '" + expression + "': " + e.getMessage());
+			return;
+		}
 	}
 	
 	// Need a typed function because java doesn't like generics
-	private <T> void executeAndStore(State<T> resultState, Conversation conversation, String expression) {
+	private <T> void executeAndStore(State<T> resultState, Conversation conversation, String expression) throws IllegalArgumentException {
 		SupportedStateType<T> type = resultState.getType();
 		
 		T result = type.executeTypedExpression(conversation.getNpc(), expression);

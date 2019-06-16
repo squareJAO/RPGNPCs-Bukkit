@@ -47,7 +47,7 @@ public abstract class SupportedStateType<T> {
 		return new State<T>(name, uuid, this, storageType, defaultValue);
 	}
 	
-	public T executeTypedExpression(RpgNpc npc, String expression) {
+	public T executeTypedExpression(RpgNpc npc, String expression) throws IllegalArgumentException {
 		// Get variables for use in function
 		StaticVariableSet<?> variableSet = makeVariableSet(npc);
 		

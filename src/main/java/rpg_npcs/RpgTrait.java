@@ -161,4 +161,9 @@ public class RpgTrait extends Trait implements RpgNpc {
 	public String getUUIDString() {
 		return "Citizens2NPC_" + this.npc.getId();
 	}
+	
+	@Override
+	public String getNPCName() {
+		return this.npc.getFullName();
+	}
 }

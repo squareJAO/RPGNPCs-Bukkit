@@ -17,6 +17,10 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 		super('[', ']');
 	}
 	
+	public void addCommandNodeGenerator(String regexString, Class<? extends ScriptCommandNode> newCommandNodeClass) {
+		addCommandNodeGenerator(Pattern.compile(regexString), newCommandNodeClass);
+	}
+	
 	public void addCommandNodeGenerator(Pattern regex, Class<? extends ScriptCommandNode> newCommandNodeClass) {
 		commandNodesMap.put(regex, newCommandNodeClass);
 	}

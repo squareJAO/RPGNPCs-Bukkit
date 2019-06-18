@@ -41,6 +41,20 @@ defaultConversationMaxRange: 5
 # Recommended value: 15 in normal cases, 5 for very few NPCs, 30+ for many NPCs
 ticksPerRangeCheck: 15
 
+# The default speed of text when a speed isn't given inside of a script
+# Default value: 0.7
+defaultTextSpeed: 0.7
+
+# The number of characters to display before a line break if a line break isn't
+# manually placed
+# Default value: 20
+charactersPerLine: 20
+
+# The string that should be placed at the start of every new line. This is usually a
+# colour code but can be any text
+# Default value: §7
+lineStartString: §7
+
 # The global triggers, visible from any role
 triggers:
   walkClose:

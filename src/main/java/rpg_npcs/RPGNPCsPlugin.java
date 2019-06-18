@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -22,21 +21,15 @@ import net.citizensnpcs.api.trait.TraitInfo;
 import rpg_npcs.command.CommadCalculate;
 import rpg_npcs.command.CommandEditRpgNpc;
 import rpg_npcs.role.Role;
-import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.factoryPart.ScriptFactoryCommandPart;
-import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryPausePart;
 import rpg_npcs.script.factoryPart.ScriptFactoryQuestionPart;
 import rpg_npcs.script.factoryPart.ScriptFactorySpeedPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryStatusPart;
-import rpg_npcs.script.node.command.ScriptCommandNode;
 import rpg_npcs.script.node.command.ScriptCrouchNode;
 import rpg_npcs.script.node.command.ScriptLookCloseNode;
 import rpg_npcs.script.node.command.ScriptStoreNode;
 import rpg_npcs.state.NumberStateType;
-import rpg_npcs.state.StateFactory;
-import rpg_npcs.state.SupportedStateType;
-import rpg_npcs.state.SupportedStateTypeRecords;
 
 public class RPGNPCsPlugin extends JavaPlugin {
 	public static MySQL sql;
@@ -44,14 +37,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	public Map<String, Role> roles = new HashMap<String, Role>();
 	public final Set<RpgNpc> npcs = new HashSet<RpgNpc>();
 
-	protected ScriptFactory scriptFactory;
-	protected StateFactory stateFactory;
-	protected ScriptFactoryCommandPart scriptFactoryCommandPart;
-	
-	
-	// Parts that go into factories
-	private Set<ScriptFactoryPart> parts = new HashSet<ScriptFactoryPart>();
-	private SupportedStateTypeRecords supportedStateTypeRecords = new SupportedStateTypeRecords();
+	protected ParserFactorySet factorySet;
 	
 	// Config settings
 	public boolean verboseLogging = true;
@@ -86,35 +72,39 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		getCommand("calculate").setTabCompleter(commandCalculate);
 		getCommand("calculate").setExecutor(commandCalculate);
 		
-		// Create default factory parts
-		scriptFactoryCommandPart = new ScriptFactoryCommandPart();
-		addDefaultCommandFactoryData();
-		
-		// Add default factory parts
-		addFactoryPart(new ScriptFactoryPausePart());
-		addFactoryPart(new ScriptFactorySpeedPart());
-		addFactoryPart(scriptFactoryCommandPart);
-		addFactoryPart(new ScriptFactoryQuestionPart());
-		addFactoryPart(new ScriptFactoryStatusPart());
-		buildScriptFactory();
-		
-		// Add default state types
-		addSupportedStateType(new NumberStateType());
-		
-		// Create state factory
-		stateFactory = new StateFactory(supportedStateTypeRecords);
+		// Create default factory set
+		factorySet = new ParserFactorySet();
+		addDefaultFactoryData();
 		
 		// Load all conversations
-		ParseLog log = reloadData();
+		ParseLog log = reload();
 		printLogToConsole(log);
 		
 		// Add all custom traits
 		CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(RpgTrait.class).withName("Rpgnpc"));
 		
 		// Reload config
-		reloadData();
+		reload();
 	}
 	
+	private void addDefaultFactoryData() {
+		// Command factory part
+		ScriptFactoryCommandPart scriptFactoryCommandPart = new ScriptFactoryCommandPart();
+		scriptFactoryCommandPart.addCommandNodeGenerator("crouch", ScriptCrouchNode.class);
+		scriptFactoryCommandPart.addCommandNodeGenerator("look(?:close)?", ScriptLookCloseNode.class);
+		scriptFactoryCommandPart.addCommandNodeGenerator("store(?:in)?", ScriptStoreNode.class);
+		
+		// Add all factory parts
+		factorySet.addScriptFactoryPart("pause", new ScriptFactoryPausePart());
+		factorySet.addScriptFactoryPart("speed", new ScriptFactorySpeedPart());
+		factorySet.addScriptFactoryPart("command", scriptFactoryCommandPart);
+		factorySet.addScriptFactoryPart("question", new ScriptFactoryQuestionPart());
+		factorySet.addScriptFactoryPart("status", new ScriptFactoryStatusPart());
+		
+		// Supported types
+		factorySet.addSupportedStateType(new NumberStateType());
+	}
+
 	private void createSQL() {
 		boolean isSQLite = getConfig().getBoolean("useSQLite");
 		
@@ -149,25 +139,6 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 	}
 	
-	private void addDefaultCommandFactoryData() {
-		addScriptCommand("crouch", ScriptCrouchNode.class);
-		addScriptCommand("look(?:close)?", ScriptLookCloseNode.class);
-		addScriptCommand("store(?:in)?", ScriptStoreNode.class);
-	}
-	
-	/**
-	 * Adds a command to the script factory for use when compiling scripts
-	 * @param regexString A regex string to match against command words
-	 * @param function The function, passed a parameter string, which should return a ScriptCommandNode, or null if the parameters are invalid
-	 */
-	public void addScriptCommand(String regexString, Class<? extends ScriptCommandNode> nodeClass) {
-		scriptFactoryCommandPart.addCommandNodeGenerator(Pattern.compile(regexString), nodeClass);
-	}
-	
-	public void addSupportedStateType(SupportedStateType<?> supportedStateType) {
-		supportedStateTypeRecords.addSupportedType(supportedStateType);
-	}
-	
 	public void printLogToConsole(ParseLog log) {
 		String logString;
 		if (verboseLogging) {
@@ -184,17 +155,8 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	public static boolean hasPlaceholderAPI() {
 		return Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
 	}
-	
-	public void addFactoryPart(ScriptFactoryPart part) {
-		parts.add(part);
-	}
-	
-	public void buildScriptFactory() {
-		ScriptFactoryPart[] partsArray = parts.toArray(new ScriptFactoryPart[parts.size()]);
-		scriptFactory = new ScriptFactory(partsArray, 0.8, 20, "§7");
-	}
 
-	public ParseLog reloadData() {
+	public ParseLog reload() {
 		// Unregister old trigger listeners
 		for (Role role : roles.values()) {
 			role.unregisterTriggerListeners(this);
@@ -207,9 +169,15 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		verboseLogging = getConfig().getBoolean("verboseLogging");
 		defaultConversationMaxRange = getConfig().getInt("defaultConversationMaxRange");
 		ticksPerRangeCheck = getConfig().getInt("ticksPerRangeCheck");
+		factorySet.setCharactersPerWrap(getConfig().getInt("charactersPerLine"));
+		factorySet.setDefaultLineStartString(getConfig().getString("lineStartString"));
+		factorySet.setDefaultSpeed(getConfig().getDouble("defaultTextSpeed"));
+		
+		// Rebuild
+		factorySet.rebuild();
 		
 		// Set new data
-		ConfigParser.ConfigResult result = ConfigParser.reloadConfig(scriptFactory, stateFactory, getConfig());
+		ConfigParser.ConfigResult result = factorySet.getConfigParser().reloadConfig(getConfig());
 		roles = result.rolesMap;
 		
 		// Register trigger listeners
@@ -226,7 +194,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	}
 	
 	public void registerRPGNPC(RpgNpc npc) {
-		getLogger().info("Registering NPC " + npc.getName());
+		getLogger().info("Registering NPC " + npc.getNPCName());
 		npcs.add(npc);
 		setNPCRole(npc);
 	}
@@ -237,7 +205,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	}
 	
 	private void setNPCRole(RpgNpc npc) {
-		String npcName = npc.getName();
+		String npcName = npc.getNPCName();
 		if (roles.containsKey(npcName)) {
 			npc.setRole(roles.get(npcName));
 		} else {

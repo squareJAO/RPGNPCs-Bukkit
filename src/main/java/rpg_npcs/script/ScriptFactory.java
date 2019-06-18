@@ -1,5 +1,6 @@
 package rpg_npcs.script;
 
+import java.util.Collection;
 import java.util.Map;
 
 import rpg_npcs.role.RolePropertyMap;
@@ -13,9 +14,9 @@ public class ScriptFactory {
 	private final double defaultSpeed;
 	private final int charactersPerWrap;
 	private final String defaultLineStartString;
-	private final ScriptFactoryPart[] factoryParts;
+	private final Collection<ScriptFactoryPart> factoryParts;
 	
-	public ScriptFactory(ScriptFactoryPart[] factoryParts, double defaultSpeed, int charactersPerWrap, String defaultLineStartString) {
+	public ScriptFactory(Collection<ScriptFactoryPart> factoryParts, double defaultSpeed, int charactersPerWrap, String defaultLineStartString) {
 		this.defaultSpeed = defaultSpeed;
 		this.charactersPerWrap = charactersPerWrap;
 		this.defaultLineStartString = defaultLineStartString;

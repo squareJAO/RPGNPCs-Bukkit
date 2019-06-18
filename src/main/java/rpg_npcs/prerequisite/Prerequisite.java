@@ -4,6 +4,6 @@ import org.bukkit.entity.Player;
 
 import rpg_npcs.RpgNpc;
 
-public abstract class Prerequisite {
-	public abstract boolean isMet(Player player, RpgNpc npc);
+public interface Prerequisite {
+	public boolean isMet(Player player, RpgNpc npc);
 }

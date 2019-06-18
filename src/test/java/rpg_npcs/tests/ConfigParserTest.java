@@ -16,8 +16,8 @@ import org.bukkit.configuration.MemoryConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 
-import rpg_npcs.ConfigParser;
 import rpg_npcs.DialogueMapping;
+import rpg_npcs.ParserFactorySet;
 import rpg_npcs.WeightedSet;
 import rpg_npcs.ConfigParser.ConfigResult;
 import rpg_npcs.role.Role;
@@ -31,7 +31,7 @@ public class ConfigParserTest {
 	public void emptyConfigBaseRoleTest() {
 		Configuration testConfigurationSection = new MemoryConfiguration();
 		
-		ConfigResult result = ConfigParser.reloadConfig(ScriptFactoryTest.getTestableEmptyScriptFactory(), StateFactoryTest.getTestableEmptyStateFactory(), testConfigurationSection);
+		ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
 		
 		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
 		assertEquals(1, result.rolesMap.size());
@@ -80,7 +80,7 @@ public class ConfigParserTest {
 			}
 			
 			// Generate result
-			ConfigResult result = ConfigParser.reloadConfig(ScriptFactoryTest.getTestableEmptyScriptFactory(), StateFactoryTest.getTestableEmptyStateFactory(), testConfigurationSection);
+			ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
 			
 			// Test
 			assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
@@ -148,7 +148,7 @@ public class ConfigParserTest {
 		trigger6PrerequisitesSection.set("range", 5);
 		
 		// Generate result
-		ConfigResult result = ConfigParser.reloadConfig(ScriptFactoryTest.getTestableEmptyScriptFactory(), StateFactoryTest.getTestableEmptyStateFactory(), testConfigurationSection);
+		ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
 		
 		// Test
 		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
@@ -244,7 +244,7 @@ public class ConfigParserTest {
 		roleDialoguesSection.set("trigger6", Arrays.asList(trigger6Objects));
 		
 		// Generate result
-		roleDialoguesResult = ConfigParser.reloadConfig(ScriptFactoryTest.getTestableEmptyScriptFactory(), StateFactoryTest.getTestableEmptyStateFactory(), testConfigurationSection);
+		roleDialoguesResult = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
 		
 		// Extract data
 		roleDialoguesBaseRole = roleDialoguesResult.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
@@ -438,7 +438,7 @@ public class ConfigParserTest {
 		
 		
 		// Generate result
-		ConfigResult result = ConfigParser.reloadConfig(ScriptFactoryTest.getTestableEmptyScriptFactory(), StateFactoryTest.getTestableEmptyStateFactory(), testConfigurationSection);
+		ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
 		
 		Role baseRole = result.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
 		Role roleA = result.rolesMap.get("a");

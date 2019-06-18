@@ -140,9 +140,11 @@ public class State <T> extends RoleNamedProperty {
 		String storageUUIDString;
 		switch (storageType) {
 		case GLOBAL:
+			globalValueCache = value;
 			storageUUIDString = stateUUIDString;
 			break;
 		case NPC:
+			npcValueMapCache.put(npc, value);
 			storageUUIDString = makeNpcUuidString(npc);
 			break;
 		default:

@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 
 import rpg_npcs.RpgNpc;
 
-public class RangePrerequisite extends Prerequisite {
+public class RangePrerequisite implements Prerequisite {
 	private final double rangeSquared;
 	
 	public RangePrerequisite(double range) {

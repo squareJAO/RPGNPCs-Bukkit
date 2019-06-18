@@ -25,7 +25,7 @@ public interface RpgNpc {
 	
 	public Entity getEntity();
 
-	public String getName();
+	public String getNPCName();
 	
 	public void lookClose(boolean enabled);
 	

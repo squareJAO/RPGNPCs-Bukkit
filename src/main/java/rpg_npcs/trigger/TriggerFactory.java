@@ -11,7 +11,7 @@ public class TriggerFactory {
 		public Trigger trigger = null;
 	}
 	
-	public static TriggerFactoryReturnData createTrigger(String type, String name, Collection<Prerequisite> prerequisites, int priority) {
+	public TriggerFactoryReturnData createTrigger(String type, String name, Collection<Prerequisite> prerequisites, int priority) {
 		TriggerFactoryReturnData returnData = new TriggerFactoryReturnData();
 
 		switch (type.toLowerCase()) {

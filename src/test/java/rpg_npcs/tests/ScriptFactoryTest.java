@@ -7,23 +7,16 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import rpg_npcs.ParserFactorySet;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.Script;
-import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.ScriptFactoryState;
-import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 
 public class ScriptFactoryTest {
-	
-	public static ScriptFactory getTestableEmptyScriptFactory() {
-		return new ScriptFactory(new ScriptFactoryPart[0], 1, 10, "");
-	}
-	
 	@Test
 	public void emptyTest() {
 		// Generate data
-		ScriptFactory emptyScriptFactory = getTestableEmptyScriptFactory();
-		ScriptFactoryState resultState = emptyScriptFactory.createConversationTree(new HashMap<String, String>(), new RolePropertyMap<Script>());
+		ScriptFactoryState resultState = (new ParserFactorySet()).getScriptFactory().createConversationTree(new HashMap<String, String>(), new RolePropertyMap<Script>());
 		
 		// Test
 		assertEquals(0, resultState.log.errorCount());
@@ -33,10 +26,9 @@ public class ScriptFactoryTest {
 	@Test
 	public void simpleStringTest() {
 		// Generate data
-		ScriptFactory emptyScriptFactory = getTestableEmptyScriptFactory();
 		Map<String, String> scriptMap = new HashMap<String, String>();
 		scriptMap.put("script1", "testText1");
-		ScriptFactoryState resultState = emptyScriptFactory.createConversationTree(scriptMap, new RolePropertyMap<Script>());
+		ScriptFactoryState resultState = (new ParserFactorySet()).getScriptFactory().createConversationTree(scriptMap, new RolePropertyMap<Script>());
 		
 		// Test
 		assertEquals(0, resultState.log.errorCount());

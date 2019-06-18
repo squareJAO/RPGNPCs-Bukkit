@@ -78,7 +78,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 			if (selectedNpc == null) {
 				sender.sendMessage("No npc selected");
 			} else {
-				sender.sendMessage("Selected npc: '" + selectedNpc.getName() + "'");
+				sender.sendMessage("Selected npc: '" + selectedNpc.getNPCName() + "'");
 			}
 			
 			return true;
@@ -128,7 +128,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 			sender.sendMessage("Reloading npcs...");
 			
 			// Regenerate the dialogue trees
-			ParseLog reloadLog = plugin.reloadData();
+			ParseLog reloadLog = plugin.reload();
 			
 			// Print log
 			plugin.printLogToConsole(reloadLog);
@@ -145,7 +145,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 	private boolean listNPCs(CommandSender sender) {
 		sender.sendMessage("Found " + plugin.npcs.size() + " RpgNpc(s)");
 		for (RpgNpc npc : plugin.npcs) {
-			sender.sendMessage(" - Name: " + npc.getName() + "\n    Role: " + npc.getRole().nameString);
+			sender.sendMessage(" - Name: " + npc.getNPCName() + "\n    Role: " + npc.getRole().nameString);
 		}
 		
 		return true;
@@ -157,7 +157,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 			sender.sendMessage("No npc selected, global states:");
 			role = plugin.roles.get(Role.DEFAULT_ROLE_NAME_STRING);
 		} else {
-			sender.sendMessage("States for npc '" + selectedNpc.getName() + "': ");
+			sender.sendMessage("States for npc '" + selectedNpc.getNPCName() + "': ");
 			role = selectedNpc.getRole();
 		}
 		

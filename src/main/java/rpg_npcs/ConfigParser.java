@@ -17,13 +17,10 @@ import rpg_npcs.prerequisite.PrerequisiteFactory.PrerequisiteFactoryReturnData;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.Script;
-import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.ScriptFactoryState;
 import rpg_npcs.state.State;
-import rpg_npcs.state.StateFactory;
 import rpg_npcs.state.StateFactory.StateFactoryReturnData;
 import rpg_npcs.trigger.Trigger;
-import rpg_npcs.trigger.TriggerFactory;
 import rpg_npcs.trigger.TriggerFactory.TriggerFactoryReturnData;
 
 public class ConfigParser {
@@ -39,8 +36,15 @@ public class ConfigParser {
 	}
 	
 	static final int[] WEIGHT_MAPPING = {100, 100, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", Role.DEFAULT_ROLE_NAME_STRING};
 	
-	public static ConfigResult reloadConfig(ScriptFactory scriptFactory, StateFactory stateFactory, Configuration config) {
+	private final ParserFactorySet factorySet;
+	
+	public ConfigParser(ParserFactorySet factorySet) {
+		this.factorySet = factorySet;
+	}
+	
+	public ConfigResult reloadConfig(Configuration config) {
 		/*
 		 * Config design
 		 * [] required
@@ -97,7 +101,7 @@ public class ConfigParser {
 		RolePropertyMap<State<?>> baseStatesMap = new RolePropertyMap<State<?>>();
 		if (config.isConfigurationSection("states")) {
 			ConfigurationSection roleStatesConfigSection = config.getConfigurationSection("states");
-			baseStatesMap = getStates(log, roleStatesConfigSection, stateFactory, Role.DEFAULT_ROLE_NAME_STRING);
+			baseStatesMap = getStates(log, roleStatesConfigSection, Role.DEFAULT_ROLE_NAME_STRING);
 		}
 		
 		// Resolve base triggers
@@ -111,7 +115,7 @@ public class ConfigParser {
 		RolePropertyMap<Script> baseScriptMap = new RolePropertyMap<Script>();
 		if (config.isConfigurationSection("scripts")) {
 			ConfigurationSection scriptsConfigSection = config.getConfigurationSection("scripts");
-			baseScriptMap = getScripts(log, scriptsConfigSection, scriptFactory, new RolePropertyMap<Script>());
+			baseScriptMap = getScripts(log, scriptsConfigSection, new RolePropertyMap<Script>());
 		}
 		
 		// Resolve base dialogues
@@ -128,7 +132,7 @@ public class ConfigParser {
 		RolePropertyMap<Role> rolesMap;
 		if (config.contains("roles") && config.isConfigurationSection("roles")) {
 			ConfigurationSection rolesConfigSection = config.getConfigurationSection("roles");
-			rolesMap = getRoles(log, rolesConfigSection, scriptFactory, stateFactory, baseRole, defaultEventPriority);
+			rolesMap = getRoles(log, rolesConfigSection, baseRole, defaultEventPriority);
 		} else {
 			rolesMap = new RolePropertyMap<Role>();
 			rolesMap.put(baseRole);
@@ -137,7 +141,7 @@ public class ConfigParser {
 		return new ConfigResult(log, rolesMap);
 	}
 	
-	private static RolePropertyMap<State<?>> getStates(ParseLog log, ConfigurationSection statesStatesConfigSection, StateFactory stateFactory, String scopeName) {
+	private RolePropertyMap<State<?>> getStates(ParseLog log, ConfigurationSection statesStatesConfigSection, String scopeName) {
 		RolePropertyMap<State<?>> statesMap = new RolePropertyMap<State<?>>();
 		Set<String> stateNameStrings = statesStatesConfigSection.getKeys(false);
 		
@@ -149,8 +153,9 @@ public class ConfigParser {
 			}
 			
 			// Check name
-			if (stateNameString.contains(".")) {
-				log.addError("State " + stateNameString + " is given in an invalid format");
+			String invalidPartString = checkForInvalidCharacters(stateNameString);
+			if (invalidPartString != null) {
+				log.addError("State name '" + stateNameString + "' cannot contain " + invalidPartString);
 				continue;
 			}
 			
@@ -181,7 +186,7 @@ public class ConfigParser {
 			String uuid = scopeName + "." + stateNameString + "." + typeString;
 			
 			// Create state
-			StateFactoryReturnData data = stateFactory.makeState(stateNameString, typeString, scopeString, defaultValue, uuid);
+			StateFactoryReturnData data = factorySet.getStateFactory().makeState(stateNameString, typeString, scopeString, defaultValue, uuid);
 			if (data.state != null) {
 				statesMap.put(data.state);
 				log.addInfo(" - type: " + typeString);
@@ -194,7 +199,7 @@ public class ConfigParser {
 		return statesMap;
 	}
 	
-	private static RolePropertyMap<Trigger> getTriggers(ParseLog log, ConfigurationSection triggersConfigSection, int defaultEventPriority) {
+	private RolePropertyMap<Trigger> getTriggers(ParseLog log, ConfigurationSection triggersConfigSection, int defaultEventPriority) {
 		RolePropertyMap<Trigger> triggerMap = new RolePropertyMap<Trigger>();
 		Set<String> triggerNameStrings = triggersConfigSection.getKeys(false);
 		
@@ -202,6 +207,13 @@ public class ConfigParser {
 		
 		// Loop and resolve
 		for (String triggerNameString : triggerNameStrings) {
+			// Check trigger name is valid
+			String invalidPartString = checkForInvalidCharacters(triggerNameString);
+			if (invalidPartString != null) {
+				log.addError("Trigger name '" + triggerNameString + "' cannot contain " + invalidPartString);
+				continue;
+			}
+			
 			ConfigurationSection triggerConfigSection = triggersConfigSection.getConfigurationSection(triggerNameString);
 			
 			log.addInfo("Trigger " + triggerNameString + ":");
@@ -249,7 +261,7 @@ public class ConfigParser {
 			}
 			
 			// Create trigger
-			TriggerFactoryReturnData returnTriggerData = TriggerFactory.createTrigger(typeString, triggerNameString, prerequisites, priority);
+			TriggerFactoryReturnData returnTriggerData = factorySet.getTriggerFactory().createTrigger(typeString, triggerNameString, prerequisites, priority);
 			
 			if (returnTriggerData.trigger != null) {
 				triggerMap.put(triggerNameString, returnTriggerData.trigger);
@@ -261,7 +273,7 @@ public class ConfigParser {
 		return triggerMap;
 	}
 
-	private static Set<Prerequisite> getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
+	private Set<Prerequisite> getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
 		Set<Prerequisite> prerequisites = new HashSet<Prerequisite>();
 		
 		// Create prerequisites
@@ -286,7 +298,7 @@ public class ConfigParser {
 	}
 
 	
-	private static RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, ScriptFactory scriptFactory, StateFactory stateFactory, Role baseRole, int defaultEventPriority) {
+	private RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, Role baseRole, int defaultEventPriority) {
 		RolePropertyMap<Role> rolesMap = new RolePropertyMap<Role>();
 		Set<String> roleNameStrings = rolesConfigSection.getKeys(false);
 		List<String> rolesToResolve = new LinkedList<String>(roleNameStrings);
@@ -306,15 +318,9 @@ public class ConfigParser {
 				String roleNameString = rolesToResolve.get(i);
 				
 				// Check name given in a valid format
-				if (roleNameString.contains(".")) {
-					log.addError("Role name cannot contain punctuation: '" + roleNameString + "' ");
-					roleNameStrings.remove(roleNameString);
-					rolesToResolve.remove(i);
-					lastChanged++;
-					continue;
-				}
-				if (roleNameString == Role.DEFAULT_ROLE_NAME_STRING) {
-					log.addError("Role name cannot be " + Role.DEFAULT_ROLE_NAME_STRING + ", sorry!");
+				String invalidPartString = checkForInvalidCharacters(roleNameString);
+				if (invalidPartString != null) {
+					log.addError("Role name cannot contain '" + invalidPartString + "': '" + roleNameString + "' ");
 					roleNameStrings.remove(roleNameString);
 					rolesToResolve.remove(i);
 					lastChanged++;
@@ -372,14 +378,14 @@ public class ConfigParser {
 				RolePropertyMap<State<?>> baseStatesMap = new RolePropertyMap<State<?>>();
 				if (roleConfigSection.isConfigurationSection("states")) {
 					ConfigurationSection roleStatesConfigSection = roleConfigSection.getConfigurationSection("states");
-					baseStatesMap = getStates(log, roleStatesConfigSection, stateFactory, roleNameString);
+					baseStatesMap = getStates(log, roleStatesConfigSection, roleNameString);
 				}
 				
 				// Gather script commands
 				RolePropertyMap<Script> roleScriptMap = new RolePropertyMap<Script>();
 				if (roleConfigSection.isConfigurationSection("scripts")) {
 					ConfigurationSection scriptStringsConfigSection = roleConfigSection.getConfigurationSection("scripts");
-					roleScriptMap = getScripts(log, scriptStringsConfigSection, scriptFactory, allScriptsMap);
+					roleScriptMap = getScripts(log, scriptStringsConfigSection, allScriptsMap);
 				}
 				allScriptsMap.putAll(roleScriptMap);
 				
@@ -417,13 +423,20 @@ public class ConfigParser {
 		return rolesMap;
 	}
 	
-	private static RolePropertyMap<Script> getScripts(ParseLog log, ConfigurationSection scriptStringsConfigSection, ScriptFactory scriptFactory, RolePropertyMap<Script> allScriptsMap) {
+	private RolePropertyMap<Script> getScripts(ParseLog log, ConfigurationSection scriptStringsConfigSection, RolePropertyMap<Script> allScriptsMap) {
 		Map<String, String> scriptStringsMap = new HashMap<String, String>();
 		Set<String> scriptNameStrings = scriptStringsConfigSection.getKeys(false);
 		
 		log.addInfo(" - scripts:");
 		
 		for (String scriptNameString : scriptNameStrings) {
+			// Check script name is valid
+			String invalidPartString = checkForInvalidCharacters(scriptNameString);
+			if (invalidPartString != null) {
+				log.addError("Script name '" + scriptNameString + "' cannot contain " + invalidPartString);
+				continue;
+			}
+			
 			if (!scriptStringsConfigSection.isString(scriptNameString)) {
 				log.addError("Script " + scriptNameString + " is not a string");
 				continue;
@@ -435,11 +448,11 @@ public class ConfigParser {
 		}
 		
 		// Generate role specific scripts
-		ScriptFactoryState state = scriptFactory.createConversationTree(scriptStringsMap, allScriptsMap);
+		ScriptFactoryState state = factorySet.getScriptFactory().createConversationTree(scriptStringsMap, allScriptsMap);
 		return state.getNewScripts();
 	}
 	
-	private static DialogueMapping getDialogues(ParseLog log, ConfigurationSection roleDialoguesConfigSection, RolePropertyMap<Trigger> triggers, RolePropertyMap<Script> allScriptMap) {
+	private DialogueMapping getDialogues(ParseLog log, ConfigurationSection roleDialoguesConfigSection, RolePropertyMap<Trigger> triggers, RolePropertyMap<Script> allScriptMap) {
 		DialogueMapping dialogueMap = new DialogueMapping();
 		Set<String> roleTriggerNameStrings = roleDialoguesConfigSection.getKeys(false);
 		
@@ -467,7 +480,7 @@ public class ConfigParser {
 		return dialogueMap;
 	}
 	
-	private static List<String> getRoleParentNames(ConfigurationSection roleConfigSection, Role baseRole) {
+	private List<String> getRoleParentNames(ConfigurationSection roleConfigSection, Role baseRole) {
 		if (roleConfigSection.contains("parents")) {
 			return roleConfigSection.getStringList("parents");
 		}
@@ -485,7 +498,7 @@ public class ConfigParser {
 	 * @param scriptMap All of the scripts visible in the role
 	 * @return A weighted set of all of the names of the scripts to bind to the event
 	 */
-	private static WeightedSet<String> getDialogueScriptSet(ParseLog log, ConfigurationSection dialoguesConfig, String triggerName, RolePropertyMap<Script> scriptMap) {
+	private WeightedSet<String> getDialogueScriptSet(ParseLog log, ConfigurationSection dialoguesConfig, String triggerName, RolePropertyMap<Script> scriptMap) {
 		WeightedSet<String> roleTriggerScripts = new WeightedSet<String>();
 		
 		// A single string
@@ -579,5 +592,15 @@ public class ConfigParser {
 		}
 		
 		return roleTriggerScripts;
+	}
+	
+	private static String checkForInvalidCharacters(String name) {
+		for (String string : INVALID_NAME_STRINGS) {
+			if (name.equalsIgnoreCase(string) || name.contains(string)) {
+				return string;
+			}
+		}
+		
+		return null;
 	}
 }

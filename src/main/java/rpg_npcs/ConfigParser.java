@@ -448,6 +448,7 @@ public class ConfigParser {
 		
 		// Generate role specific scripts
 		ScriptFactoryState state = factorySet.getScriptFactory().createConversationTree(scriptStringsMap, allScriptsMap);
+		log.add(state.log);
 		return state.getNewScripts();
 	}
 	

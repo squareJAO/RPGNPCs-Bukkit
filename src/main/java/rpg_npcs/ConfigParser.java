@@ -12,7 +12,6 @@ import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 
 import rpg_npcs.prerequisite.Prerequisite;
-import rpg_npcs.prerequisite.PrerequisiteFactory;
 import rpg_npcs.prerequisite.PrerequisiteFactory.PrerequisiteFactoryReturnData;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
@@ -36,7 +35,7 @@ public class ConfigParser {
 	}
 	
 	static final int[] WEIGHT_MAPPING = {100, 100, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
-	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", Role.DEFAULT_ROLE_NAME_STRING};
+	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", "__", "%", Role.DEFAULT_ROLE_NAME_STRING};
 	
 	private final ParserFactorySet factorySet;
 	
@@ -284,7 +283,7 @@ public class ConfigParser {
 			String valueString = prerequisitesConfigSet.get(keyString).toString();
 			
 			// Convert to prerequisite
-			PrerequisiteFactoryReturnData returnPrerequisiteData = PrerequisiteFactory.createPrerequisite(keyString, valueString);
+			PrerequisiteFactoryReturnData returnPrerequisiteData = factorySet.getPrerequisiteFactory().createPrerequisite(keyString, valueString);
 			
 			if (returnPrerequisiteData.prerequisite != null) {
 				prerequisites.add(returnPrerequisiteData.prerequisite);

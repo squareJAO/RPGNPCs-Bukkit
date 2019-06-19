@@ -52,7 +52,7 @@ public class ParserFactorySet {
 		
 		triggerFactory = new TriggerFactory();
 		
-		prerequisiteFactory = new PrerequisiteFactory();
+		prerequisiteFactory = new PrerequisiteFactory(this);
 	}
 	
 	public final void addScriptFactoryPart(String name, ScriptFactoryPart part) {
@@ -90,6 +90,10 @@ public class ParserFactorySet {
 	
 	public final ConfigParser getConfigParser() {
 		return configParser;
+	}
+	
+	public final SupportedStateTypeRecords getSupportedStateTypeRecords() {
+		return supportedStateTypeRecords;
 	}
 
 	public final void setDefaultSpeed(double defaultSpeed) {

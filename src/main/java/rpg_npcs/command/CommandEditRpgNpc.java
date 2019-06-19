@@ -35,7 +35,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 		List<String> list = new ArrayList<String>();
 		
 		if (args.length == 1) {
-			for (String string : new String[] {"list", "set", "reload"}) {
+			for (String string : new String[] {"list", "get", "set", "reload"}) {
 				if (string.startsWith(args[0])) {
 					list.add(string);
 				}
@@ -50,7 +50,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 						list.add(string);
 					}
 				}
-			} else if (args[0].equalsIgnoreCase("set")) {
+			} else if (args[0].equalsIgnoreCase("get") || args[0].equalsIgnoreCase("set")) {
 				for (String string : new String[] {"state"}) {
 					if (string.startsWith(args[1])) {
 						list.add(string);
@@ -74,7 +74,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 		RolePropertyMap<State<?>> statesMap = role.getAllVisibleStates();
 		
 		if (args.length == 3) {
-			if (args[0].equalsIgnoreCase("set")) {
+			if (args[0].equalsIgnoreCase("get") || args[0].equalsIgnoreCase("set")) {
 				if (args[1].equalsIgnoreCase("state")) {
 					for (String string : statesMap.keySet()) {
 						if (string.contains(args[2]) || string.equals(args[2])) {
@@ -87,7 +87,9 @@ public class CommandEditRpgNpc implements TabExecutor {
 		}
 		
 		if (args.length == 4 || args.length == 5) {
-			if (args[0].equalsIgnoreCase("set") && args[1].equalsIgnoreCase("state") && statesMap.keySet().contains(args[2])) {
+			if ((args[0].equalsIgnoreCase("get") || args[0].equalsIgnoreCase("set"))
+					&& args[1].equalsIgnoreCase("state")
+					&& statesMap.keySet().contains(args[2])) {
 				StorageType storageType = statesMap.get(args[2]).getStorageType();
 				if (storageType == StorageType.PLAYER || storageType == StorageType.PLAYERNPC) {
 					if (args.length == 4) {
@@ -146,6 +148,20 @@ public class CommandEditRpgNpc implements TabExecutor {
 				sender.sendMessage("Invalid argument: " + args[1]);
 				return false;
 			}
+		case "get":
+			if (args.length == 1) {
+				sender.sendMessage(ChatColor.RED + "Please give an item to get");
+				return false;
+			}
+			
+			switch (args[1].toLowerCase()) {
+			case "state":
+				return getState(args, selectedNpc, sender);
+
+			default:
+				sender.sendMessage("Invalid argument to get: " + args[1]);
+				return false;
+			}
 		case "set":
 			if (args.length == 1) {
 				sender.sendMessage(ChatColor.RED + "Please give an item to set");
@@ -161,14 +177,20 @@ public class CommandEditRpgNpc implements TabExecutor {
 				return false;
 			}
 		case "reload":
-			if (args.length >= 1) {
+			if (args.length > 1) {
 				sender.sendMessage(ChatColor.RED + "Unused arguments beyond '" + args[0] + "'");
 			}
 			
 			sender.sendMessage("Reloading npcs...");
 			
 			// Regenerate the dialogue trees
-			ParseLog reloadLog = plugin.reload();
+			ParseLog reloadLog;
+			try {
+				reloadLog = plugin.reload();
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
+			}
 			
 			// Print log
 			plugin.printLogToConsole(reloadLog);
@@ -221,16 +243,16 @@ public class CommandEditRpgNpc implements TabExecutor {
 				if (selectedNpc != null) {
 					valueString = state.getValue(selectedNpc, null).toString();
 				} else {
-					valueString = "[Select an NPC for a value]";
+					valueString = "[NPC specific]";
 				}
 				break;
 				
 			case PLAYER:
-				valueString = "[Value player specific]";
+				valueString = "[Player specific]";
 				break;
 				
 			case PLAYERNPC:
-				valueString = "[Value player & npc specific]";
+				valueString = "[PlayerNpc specific]";
 				break;
 
 			default:
@@ -243,9 +265,71 @@ public class CommandEditRpgNpc implements TabExecutor {
 		return true;
 	}
 	
+	private boolean getState(String[] args, RpgNpc selectedNpc, CommandSender sender) {
+		if (args.length <= 2) {
+			sender.sendMessage("No state given (not enough arguments)");
+			return false;
+		}
+		
+		Role role;
+		if (selectedNpc == null) {
+			role = plugin.roles.get(Role.DEFAULT_ROLE_NAME_STRING);
+		} else {
+			role = selectedNpc.getRole();
+		}
+
+		String variableNameString = args[2];
+		
+		OfflinePlayer player = null;
+		if (sender instanceof Player) {
+			player = (Player) sender;
+		}
+		
+		if (args.length >= 4) {
+			if (!args[3].equalsIgnoreCase("for")) {
+				sender.sendMessage("No state given (too many arguments)");
+				return false;
+			}
+			
+			String playerNameString = args[4];
+			Optional<? extends Player> playerOptional = Bukkit.getOnlinePlayers().parallelStream()
+					.filter(p -> p.getName().equalsIgnoreCase(playerNameString))
+					.findFirst();
+			
+			if (!playerOptional.isPresent()) {
+				sender.sendMessage("Cannot find player " + playerNameString);
+				return false;
+			}
+			
+			player = playerOptional.get();
+		}
+		
+		RolePropertyMap<State<?>> statesMap = role.getAllVisibleStates();
+		if (!statesMap.containsKey(variableNameString)) {
+			sender.sendMessage(ChatColor.RED + "State " + variableNameString + " not found");
+			return false;
+		}
+		
+		State<?> stateToDisplay = statesMap.get(variableNameString);
+		
+		if (selectedNpc == null && (stateToDisplay.getStorageType() == StorageType.NPC || stateToDisplay.getStorageType() == StorageType.PLAYERNPC)) {
+			sender.sendMessage("No npc selected");
+			return false;
+		}
+		
+		if (player == null && (stateToDisplay.getStorageType() == StorageType.PLAYER || stateToDisplay.getStorageType() == StorageType.PLAYERNPC)) {
+			sender.sendMessage("No player selected");
+			return false;
+		}
+
+		sender.sendMessage(variableNameString + ": " + stateToDisplay.getValue(selectedNpc, player));
+		
+		return true;
+	}
+	
 	private boolean setState(String[] args, RpgNpc selectedNpc, CommandSender sender) {
 		if (args.length <= 3) {
-			sender.sendMessage("No variable/value given (not enough arguments)");
+			sender.sendMessage("No value given (not enough arguments)");
 			return false;
 		}
 		

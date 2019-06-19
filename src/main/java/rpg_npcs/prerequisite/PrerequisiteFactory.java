@@ -1,6 +1,14 @@
 package rpg_npcs.prerequisite;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.NotImplementedException;
+
 import rpg_npcs.ParseLog;
+import rpg_npcs.ParserFactorySet;
+import rpg_npcs.prerequisite.StatePrerequisite.Comparison;
+import rpg_npcs.state.SupportedStateType;
 
 public class PrerequisiteFactory {
 	public static class PrerequisiteFactoryReturnData {
@@ -8,7 +16,13 @@ public class PrerequisiteFactory {
 		public Prerequisite prerequisite = null;
 	}
 	
-	public static PrerequisiteFactoryReturnData createPrerequisite(String key, String value) {
+	private final ParserFactorySet parserFactorySet;
+	
+	public PrerequisiteFactory(ParserFactorySet parserFactorySet) {
+		this.parserFactorySet = parserFactorySet;
+	}
+	
+	public PrerequisiteFactoryReturnData createPrerequisite(String key, String value) {
 		PrerequisiteFactoryReturnData returnData = new PrerequisiteFactoryReturnData();
 		
 		switch (key.toLowerCase()) {
@@ -19,6 +33,57 @@ public class PrerequisiteFactory {
 			} catch (NumberFormatException e) {
 				returnData.log.addError("Unrecognised number for Range: '" + value + "'");
 			}
+			break;
+		case "state":
+			String valueTypeString = value.split(" ")[0];
+			SupportedStateType<?> supportedStateType = parserFactorySet.getSupportedStateTypeRecords().get(valueTypeString);
+			
+			if (supportedStateType == null) {
+				returnData.log.addError("Unrecognised state type: '" + valueTypeString + "'");
+				break;
+			}
+			
+			// Get expression
+			String inequalityString = value.substring(valueTypeString.length() + 1);
+			Matcher inequalityMatcher = Pattern.compile("(.+)((?:<|>)=?|==|!=)(.+)").matcher(inequalityString);
+			
+			if (!inequalityMatcher.matches()) {
+				returnData.log.addError("Invalid inequality: '" + inequalityString + "'");
+				break;
+			}
+			
+			String lhsExpressionString = inequalityMatcher.group(1);
+			String inequalitySignString = inequalityMatcher.group(2);
+			String rhsExpressionString = inequalityMatcher.group(3);
+			
+			StatePrerequisite.Comparison comparison;
+			switch (inequalitySignString) {
+			case "<":
+				comparison = Comparison.LESS_THAN;
+				break;
+			case "<=":
+				comparison = Comparison.LESS_THAN_OR_EQUAL_TO;
+				break;
+			case "=":
+			case "==":
+				comparison = Comparison.EQUAL_TO;
+				break;
+			case ">":
+				comparison = Comparison.GREATER_THAN;
+				break;
+			case ">=":
+				comparison = Comparison.GREATER_THAN_OR_EQUAL_TO;
+				break;
+			case "!=":
+				comparison = Comparison.NOT_EQUAL_TO;
+				break;
+
+			default:
+				throw new NotImplementedException();
+			}
+			
+			returnData.prerequisite = new StatePrerequisite(comparison, supportedStateType, lhsExpressionString, rhsExpressionString);
+			
 			break;
 		default:
 			returnData.log.addError("Unrecognised prerequisite key: '" + key + "'");

@@ -92,7 +92,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		ScriptFactoryCommandPart scriptFactoryCommandPart = new ScriptFactoryCommandPart();
 		scriptFactoryCommandPart.addCommandNodeGenerator("crouch", ScriptCrouchNode.class);
 		scriptFactoryCommandPart.addCommandNodeGenerator("look(?:close)?", ScriptLookCloseNode.class);
-		scriptFactoryCommandPart.addCommandNodeGenerator("store(?:in)?", ScriptStoreNode.class);
+		scriptFactoryCommandPart.addCommandNodeGenerator("(?:store|set)(?:in)?", ScriptStoreNode.class);
 		
 		// Add all factory parts
 		factorySet.addScriptFactoryPart("pause", new ScriptFactoryPausePart());

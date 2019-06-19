@@ -10,12 +10,28 @@ import java.util.logging.Level;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.role.RoleNamedProperty;
 
 public class State <T> extends RoleNamedProperty {
+	private static class PlayerNpc {
+		public final RpgNpc npc;
+		public final OfflinePlayer player;
+		
+		public PlayerNpc(RpgNpc npc, OfflinePlayer player) {
+			this.npc = npc;
+			this.player = player;
+		}
+		
+		@Override
+		public int hashCode() {
+			return npc.hashCode() & player.hashCode();
+		}
+	}
+	
 	private final StorageType storageType; // Global = same for all npcs with a role, Npc = unique to NPCs
 	
 	private final String stateUUIDString; // The identifier, unique to this state, used when storing this state in the database
@@ -23,13 +39,17 @@ public class State <T> extends RoleNamedProperty {
 	private final SupportedStateType<T> type;
 	
 	private final T defaultValue;
-	
-	private Map<RpgNpc, T> npcValueMapCache;
+
 	private T globalValueCache;
+	private Map<RpgNpc, T> npcValueMapCache;
+	private Map<OfflinePlayer, T> playerValueMapCache;
+	private Map<PlayerNpc, T> playerNpcValueMapCache;
 	
 	public enum StorageType {
 		GLOBAL,
-		NPC
+		NPC,
+		PLAYER, 
+		PLAYERNPC
 	}
 	
 	public State(String name, String uuid, SupportedStateType<T> type, StorageType storageType, T defaultValue) {
@@ -48,6 +68,12 @@ public class State <T> extends RoleNamedProperty {
 			break;
 		case NPC:
 			this.npcValueMapCache = new HashMap<RpgNpc, T>();
+			break;
+		case PLAYER:
+			this.playerValueMapCache = new HashMap<OfflinePlayer, T>();
+			break;
+		case PLAYERNPC:
+			this.playerNpcValueMapCache = new HashMap<PlayerNpc, T>();
 			break;
 		}
 	}
@@ -111,10 +137,18 @@ public class State <T> extends RoleNamedProperty {
 	}
 	
 	private String makeNpcUuidString(RpgNpc npc) {
-		return npc.getUUIDString() + "." + stateUUIDString;
+		return "npc." + npc.getUUIDString() + ":" + stateUUIDString;
 	}
 	
-	public T getValue(RpgNpc npc) {
+	private String makePlayerUuidString(OfflinePlayer player) {
+		return "player." + player.getUniqueId() + ":" + stateUUIDString;
+	}
+	
+	private String makePlayerNpcUuidString(PlayerNpc playerNpc) {
+		return "playerNpc." + playerNpc.player.getUniqueId() + "." + playerNpc.npc.getUUIDString() + ":" + stateUUIDString;
+	}
+	
+	public T getValue(RpgNpc npc, OfflinePlayer player) {
 		switch (storageType) {
 		case GLOBAL:
 			// Assume value always cached
@@ -128,13 +162,31 @@ public class State <T> extends RoleNamedProperty {
 			
 			// First time a value is requested a blocking request is unavoidable
 			return getStoredValue(makeNpcUuidString(npc));
+
+		case PLAYER:
+			// See above
+			if (playerValueMapCache.containsKey(player)) {
+				return playerValueMapCache.get(player);
+			}
 			
-		default:
-			throw new NotImplementedException();
+			return getStoredValue(makePlayerUuidString(player));
+
+		case PLAYERNPC:
+			// Create playernpc object
+			PlayerNpc playerNpc = new PlayerNpc(npc, player);
+			
+			// See above
+			if (playerNpcValueMapCache.containsKey(playerNpc)) {
+				return playerNpcValueMapCache.get(playerNpc);
+			}
+			
+			return getStoredValue(makePlayerNpcUuidString(playerNpc));
 		}
+		
+		throw new NotImplementedException();
 	}
 	
-	public void setValue(RpgNpc npc, T value) {
+	public void setValue(RpgNpc npc, OfflinePlayer player, T value) {
 		String valueString = type.valueToString(value);
 		
 		String storageUUIDString;
@@ -147,8 +199,19 @@ public class State <T> extends RoleNamedProperty {
 			npcValueMapCache.put(npc, value);
 			storageUUIDString = makeNpcUuidString(npc);
 			break;
+		case PLAYER:
+			playerValueMapCache.put(player, value);
+			storageUUIDString = makePlayerUuidString(player);
+			break;
+		case PLAYERNPC:
+			// Create playernpc object
+			PlayerNpc playerNpc = new PlayerNpc(npc, player);
+			
+			playerNpcValueMapCache.put(playerNpc, value);
+			storageUUIDString = makePlayerNpcUuidString(playerNpc);
+			break;
 		default:
-			throw new NotImplementedException("Storage type " + storageType.toString() + " saving not supported");
+			throw new NotImplementedException();
 		}
 		
 		// Store in database using multithreading

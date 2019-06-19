@@ -54,9 +54,9 @@ public class ScriptStoreNode extends ScriptCommandNode {
 	private <T> void executeAndStore(State<T> resultState, Conversation conversation, String expression) throws IllegalArgumentException {
 		SupportedStateType<T> type = resultState.getType();
 		
-		T result = type.executeTypedExpression(conversation.getNpc(), expression);
+		T result = type.executeTypedExpression(conversation.getNpc(), conversation.getPlayer(), expression);
 		
-		resultState.setValue(conversation.getNpc(), result);
+		resultState.setValue(conversation.getNpc(), conversation.getPlayer(), result);
 	}
 
 	@Override

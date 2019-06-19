@@ -27,6 +27,15 @@ public class StateFactory {
 		case "npc":
 			scope = StorageType.NPC;
 			break;
+		case "player":
+			scope = StorageType.PLAYER;
+			break;
+		case "playernpc":
+		case "npcplayer":
+		case "player npc":
+		case "npc player":
+			scope = StorageType.PLAYERNPC;
+			break;
 		default:
 			data.log.addError("Unknown state scope: '" + scopeString + "'");
 			return data;

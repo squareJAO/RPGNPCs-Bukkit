@@ -3,6 +3,7 @@ package rpg_npcs.state;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 
 import com.fathzer.soft.javaluator.AbstractEvaluator;
 import com.fathzer.soft.javaluator.StaticVariableSet;
@@ -47,9 +48,9 @@ public abstract class SupportedStateType<T> {
 		return new State<T>(name, uuid, this, storageType, defaultValue);
 	}
 	
-	public T executeTypedExpression(RpgNpc npc, String expression) throws IllegalArgumentException {
+	public T executeTypedExpression(RpgNpc npc, OfflinePlayer player, String expression) throws IllegalArgumentException {
 		// Get variables for use in function
-		StaticVariableSet<?> variableSet = makeVariableSet(npc);
+		StaticVariableSet<?> variableSet = makeVariableSet(npc, player);
 		
 		// Execute
 		T result = getEvaluator().evaluate(expression, variableSet);
@@ -58,14 +59,14 @@ public abstract class SupportedStateType<T> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public StaticVariableSet<T> makeVariableSet(RpgNpc npc) {
+	private StaticVariableSet<T> makeVariableSet(RpgNpc npc, OfflinePlayer player) {
 		RolePropertyMap<State<?>> states = npc.getRole().getAllVisibleStates();
 		StaticVariableSet<T> variableSet = new StaticVariableSet<T>();
 		
 		for (String stateName : states.keySet()) {
 			State<?> state = states.get(stateName);
 			if (state.getType().getTypeClass() == this.getTypeClass()) {
-				variableSet.set(stateName, (T) state.getValue(npc)); // Can go unchecked as long as everyone was honest when constructing supported states
+				variableSet.set(stateName, (T) state.getValue(npc, player)); // Can go unchecked as long as everyone was honest when constructing supported states
 			}
 		}
 		

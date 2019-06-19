@@ -3,11 +3,16 @@ package rpg_npcs.command;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
 
 import net.md_5.bungee.api.ChatColor;
 import rpg_npcs.ParseLog;
@@ -35,7 +40,10 @@ public class CommandEditRpgNpc implements TabExecutor {
 					list.add(string);
 				}
 			}
-		} else if (args.length == 2) {
+			return list;
+		}
+		
+		if (args.length == 2) {
 			if (args[0].equalsIgnoreCase("list")) {
 				for (String string : new String[] {"npcs", "states"}) {
 					if (string.startsWith(args[1])) {
@@ -49,18 +57,50 @@ public class CommandEditRpgNpc implements TabExecutor {
 					}
 				}
 			}
-		} else if (args.length == 3) {
+			
+			return list;
+		}
+		
+		RPGNPCsPlugin plugin = (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
+		RpgNpc npc = plugin.getSelectedRpgNpc(sender);
+		
+		Role role;
+		if (npc != null) {
+			role = npc.getRole();
+		} else {
+			role = plugin.roles.get(Role.DEFAULT_ROLE_NAME_STRING);
+		}
+		
+		RolePropertyMap<State<?>> statesMap = role.getAllVisibleStates();
+		
+		if (args.length == 3) {
 			if (args[0].equalsIgnoreCase("set")) {
 				if (args[1].equalsIgnoreCase("state")) {
-					RPGNPCsPlugin plugin = (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
-					RpgNpc npc = plugin.getSelectedRpgNpc(sender);
-					if (npc != null) {
-						RolePropertyMap<State<?>> statesMap = npc.getRole().getAllVisibleStates();
-						for (String string : statesMap.keySet()) {
-							if (string.contains(args[2]) || string.equals(args[2])) {
-								list.add(string);
-							}
+					for (String string : statesMap.keySet()) {
+						if (string.contains(args[2]) || string.equals(args[2])) {
+							list.add(string);
 						}
+					}
+					return list;
+				}
+			}
+		}
+		
+		if (args.length == 4 || args.length == 5) {
+			if (args[0].equalsIgnoreCase("set") && args[1].equalsIgnoreCase("state") && statesMap.keySet().contains(args[2])) {
+				StorageType storageType = statesMap.get(args[2]).getStorageType();
+				if (storageType == StorageType.PLAYER || storageType == StorageType.PLAYERNPC) {
+					if (args.length == 4) {
+						list.add("for");
+						return list;
+					} else if (args[3].equalsIgnoreCase("for")) {
+						// Add the names of all online players
+						Set<String> playerNameSet = Bukkit.getOnlinePlayers()
+								.parallelStream().map(p -> p.getName())
+								.filter(playerName -> (playerName.contains(args[4]) || playerName.equals(args[4])))
+								.collect(Collectors.toSet());
+						list.addAll(playerNameSet);
+						return list;
 					}
 				}
 			}
@@ -170,13 +210,31 @@ public class CommandEditRpgNpc implements TabExecutor {
 			String variableTypeString = state.getType().getDataTypeName();
 			
 			// Get stored value string
-			String valueString = "[Select an NPC to see a value]";
-			if (selectedNpc == null) {
-				if (state.getStorageType() == StorageType.GLOBAL) {
-					valueString = state.getValue(null).toString();
+			String valueString = "";
+			
+			switch (state.getStorageType()) {
+			case GLOBAL:
+				valueString = state.getValue(null, null).toString();
+				break;
+			
+			case NPC:
+				if (selectedNpc != null) {
+					valueString = state.getValue(selectedNpc, null).toString();
+				} else {
+					valueString = "[Select an NPC for a value]";
 				}
-			} else {
-				valueString = state.getValue(selectedNpc).toString();
+				break;
+				
+			case PLAYER:
+				valueString = "[Value player specific]";
+				break;
+				
+			case PLAYERNPC:
+				valueString = "[Value player & npc specific]";
+				break;
+
+			default:
+				break;
 			}
 			
 			sender.sendMessage(" - '" + stateName + "' (" + variableTypeString + "): " + valueString);
@@ -191,23 +249,64 @@ public class CommandEditRpgNpc implements TabExecutor {
 			return false;
 		}
 		
+		Role role;
 		if (selectedNpc == null) {
-			sender.sendMessage("No npc selected");
-			return false;
+			role = plugin.roles.get(Role.DEFAULT_ROLE_NAME_STRING);
+		} else {
+			role = selectedNpc.getRole();
+		}
+
+		String variableNameString = args[2];
+		int expressionStartIndex = 3; // Where the last non-expression argument is
+		
+		OfflinePlayer player = null;
+		if (sender instanceof Player) {
+			player = (Player) sender;
 		}
 		
-		String variableNameString = args[2];
-		String expression = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+		if (args[3].equalsIgnoreCase("for")) {
+			if (args.length <= 4) {
+				sender.sendMessage("No player given (not enough arguments)");
+				return false;
+			}
+			
+			String playerNameString = args[4];
+			Optional<? extends Player> playerOptional = Bukkit.getOnlinePlayers().parallelStream()
+					.filter(p -> p.getName().equalsIgnoreCase(playerNameString))
+					.findFirst();
+			
+			if (!playerOptional.isPresent()) {
+				sender.sendMessage("Cannot find player " + playerNameString);
+				return false;
+			}
+			
+			player = playerOptional.get();
+			
+			expressionStartIndex = 5;
+		}
 		
-		RolePropertyMap<State<?>> statesMap = selectedNpc.getRole().getAllVisibleStates();
+		String expression = String.join(" ", Arrays.copyOfRange(args, expressionStartIndex, args.length));
+		
+		RolePropertyMap<State<?>> statesMap = role.getAllVisibleStates();
 		if (!statesMap.containsKey(variableNameString)) {
 			sender.sendMessage(ChatColor.RED + "State " + variableNameString + " not found");
 			return false;
 		}
 		
 		State<?> stateToStoreIn = statesMap.get(variableNameString);
+		
+		if (selectedNpc == null && (stateToStoreIn.getStorageType() == StorageType.NPC || stateToStoreIn.getStorageType() == StorageType.PLAYERNPC)) {
+			sender.sendMessage("No npc selected");
+			return false;
+		}
+		
+		if (player == null && (stateToStoreIn.getStorageType() == StorageType.PLAYER || stateToStoreIn.getStorageType() == StorageType.PLAYERNPC)) {
+			sender.sendMessage("No player selected");
+			return false;
+		}
+		
 		try {
-			return storeGivenValueInState(sender, expression, selectedNpc, stateToStoreIn);
+			return storeGivenValueInState(sender, expression, selectedNpc, player, stateToStoreIn);
 		} catch (IllegalArgumentException e) {
 			sender.sendMessage(ChatColor.RED + "Expression '" + expression + "' cannot be resolved: " + e.getMessage());
 			return true;
@@ -215,15 +314,15 @@ public class CommandEditRpgNpc implements TabExecutor {
 	}
 	
 	// Typed function workaround to appease compiler
-	private <T> boolean storeGivenValueInState(CommandSender sender, String expression, RpgNpc npc, State<T> state) throws IllegalArgumentException{
-		T value = state.getType().executeTypedExpression(npc, expression);
+	private <T> boolean storeGivenValueInState(CommandSender sender, String expression, RpgNpc npc, OfflinePlayer player, State<T> state) throws IllegalArgumentException{
+		T value = state.getType().executeTypedExpression(npc, player, expression);
 		
 		if (value == null) {
 			sender.sendMessage(ChatColor.RED + "'" + expression + "' cannot be converted to " + state.getType().getDataTypeName());
 			return false;
 		}
 		
-		state.setValue(npc, value);
+		state.setValue(npc, player, value);
 		sender.sendMessage("Stored the value " + value.toString() + " in " + state.nameString);
 		return true;
 	}

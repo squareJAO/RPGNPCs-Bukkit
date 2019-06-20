@@ -39,7 +39,7 @@ public class ConfigParserTest {
 		
 		Role baseRole = result.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
 		
-		assertEquals(Role.DEFAULT_ROLE_NAME_STRING, baseRole.nameString);
+		assertEquals(Role.DEFAULT_ROLE_NAME_STRING, baseRole.getNameString());
 		assertEquals(0, baseRole.getAllVisibleScripts().size());
 		assertEquals(0, baseRole.getImmediateParentRoles().size());
 		assertEquals(0, baseRole.getDialogueNamesMap().size());
@@ -99,7 +99,7 @@ public class ConfigParserTest {
 
 				assertEquals(1, role.getImmediateParentRoles().size());
 				assertEquals(0, role.getAllVisibleTriggers().size());
-				assertEquals(roleNameString, role.nameString);
+				assertEquals(roleNameString, role.getNameString());
 				assertEquals(2 * roleScriptSet.size(), roleScriptsMap.size());
 				
 				for (String scriptName : roleScriptSet) {

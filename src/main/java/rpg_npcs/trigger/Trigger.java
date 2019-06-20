@@ -17,7 +17,8 @@ import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.role.RoleNamedProperty;
 import rpg_npcs.script.Script;
 
-public abstract class Trigger extends RoleNamedProperty implements Listener {
+public abstract class Trigger implements RoleNamedProperty, Listener {
+	private final String nameString;
 	private final PrerequisiteSet prerequisites;
 	private final Map<RpgNpc, WeightedSet<Script>> npcScripts;
 	private final int priority;
@@ -27,7 +28,7 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 	private final Set<Player> lockedPlayers = new HashSet<Player>();
 	
 	public Trigger(String nameString, PrerequisiteSet prerequisites, int priority) {
-		super(nameString);
+		this.nameString = nameString;
 		this.npcScripts = new HashMap<RpgNpc, WeightedSet<Script>>();
 		this.prerequisites = prerequisites;
 		this.priority = priority;
@@ -112,5 +113,10 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 		};
 		
 		unlockPlayerTask.runTaskLater(RPGNPCsPlugin.getPlugin(), delay);
+	}
+	
+	@Override
+	public String getNameString() {
+		return nameString;
 	}
 }

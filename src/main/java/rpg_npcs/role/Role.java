@@ -14,7 +14,8 @@ import rpg_npcs.script.Script;
 import rpg_npcs.state.State;
 import rpg_npcs.trigger.Trigger;
 
-public class Role extends RoleNamedProperty {
+public class Role implements RoleNamedProperty {
+	private final String roleName;
 	private final Set<Role> parentRoles;
 	private final DialogueMapping dialogueMap;
 	private final RolePropertyMap<Trigger> triggers;
@@ -26,7 +27,7 @@ public class Role extends RoleNamedProperty {
 	public Role(String roleName, RolePropertyMap<Trigger> triggers, Set<Role> parentRoles,
 			DialogueMapping dialogueMap, RolePropertyMap<Script> scripts,
 			RolePropertyMap<State<?>> states) {
-		super(roleName);
+		this.roleName = roleName;
 		this.triggers = triggers;
 		this.parentRoles = parentRoles;
 		this.dialogueMap = dialogueMap;
@@ -47,7 +48,7 @@ public class Role extends RoleNamedProperty {
 		
 		// Put this's scripts in
 		results.putAll(this.scripts, "");
-		results.putAll(this.scripts, this.nameString + ".");
+		results.putAll(this.scripts, this.getNameString() + ".");
 		
 		return results;
 	}
@@ -65,7 +66,7 @@ public class Role extends RoleNamedProperty {
 		
 		// Put this's triggers in
 		results.putAll(this.triggers, "");
-		results.putAll(this.triggers, this.nameString + ".");
+		results.putAll(this.triggers, this.getNameString() + ".");
 		
 		return results;
 	}
@@ -83,7 +84,7 @@ public class Role extends RoleNamedProperty {
 		
 		// Put this's states in
 		results.putAll(this.states, "");
-		results.putAll(this.states, this.nameString + ".");
+		results.putAll(this.states, this.getNameString() + ".");
 		
 		return results;
 	}
@@ -141,13 +142,17 @@ public class Role extends RoleNamedProperty {
 	}
 	
 	public void unregisterNpc(RpgNpc npc) {
-		for (String triggerName : dialogueMap.keySet()) {
-			Trigger trigger = triggers.get(triggerName);
+		for (Trigger trigger : triggers.values()) {
 			trigger.unregisterNPC(npc);
 		}
 		
 		for (Role role : getImmediateParentRoles()) {
 			role.unregisterNpc(npc);
 		}
+	}
+
+	@Override
+	public String getNameString() {
+		return roleName;
 	}
 }

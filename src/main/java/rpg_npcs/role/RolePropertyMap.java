@@ -7,7 +7,7 @@ public class RolePropertyMap<T extends RoleNamedProperty> extends HashMap<String
 	private static final long serialVersionUID = -642777224009927595L;
 	
 	public void put(T property) {
-		this.put(property.nameString, property);
+		this.put(property.getNameString(), property);
 	}
 
 	public void putAll(RolePropertyMap<T> newProperties, String prefixString) {

@@ -17,7 +17,7 @@ import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.role.RoleNamedProperty;
 
-public class State <T> extends RoleNamedProperty {
+public class State <T> implements RoleNamedProperty {
 	public enum ComparisonResult {
 		LESS_THAN,
 		EQUAL_TO,
@@ -25,14 +25,16 @@ public class State <T> extends RoleNamedProperty {
 		UNDEFINED
 	}
 	
+	private final String nameString;
+	
 	private final String stateUUIDString; // The identifier, unique to this state, used when storing this state in the database
 	private final StateType<T> type;
 	private final List<StateScope> scopeProviders;
 	private final T defaultValue;
 	private final Map<String, T> valueCache;
 	
-	public State(String name, String uuid, StateType<T> type, List<StateScope> scopeProviders, T defaultValue) {
-		super(name);
+	public State(String nameString, String uuid, StateType<T> type, List<StateScope> scopeProviders, T defaultValue) {
+		this.nameString = nameString;
 		
 		this.defaultValue = defaultValue;
 		this.stateUUIDString = uuid;
@@ -161,5 +163,10 @@ public class State <T> extends RoleNamedProperty {
 				}
 		    }
 		}.run();
+	}
+
+	@Override
+	public String getNameString() {
+		return nameString;
 	}
 }

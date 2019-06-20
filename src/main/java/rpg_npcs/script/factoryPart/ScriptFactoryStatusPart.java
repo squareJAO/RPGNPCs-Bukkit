@@ -29,7 +29,7 @@ public class ScriptFactoryStatusPart extends ScriptFactoryPart {
 			}
 			
 			Script script = state.getScript(instruction);
-			newNode = new ScriptBranchNode(script.initialNode);
+			newNode = new ScriptBranchNode(script);
 			state.BranchDone = true;
 		}
 		

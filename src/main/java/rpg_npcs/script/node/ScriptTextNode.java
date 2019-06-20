@@ -67,7 +67,7 @@ public class ScriptTextNode extends ScriptLinearNode {
 						thisConversationNode.stopNode(conversation);
 						
 						// Exe next operation
-						thisConversationNode.onFinished(conversation);
+						thisConversationNode.finished(conversation);
 						
 						return;
 					}

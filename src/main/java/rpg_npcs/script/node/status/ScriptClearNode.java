@@ -13,7 +13,7 @@ public class ScriptClearNode extends ScriptLinearNode {
 	protected void startThis(Conversation conversation) {
 		// Clear the bubble's text
 		conversation.getSpeechBubble().clearText();
-		this.onFinished(conversation);
+		this.finished(conversation);
 	}
 
 	@Override

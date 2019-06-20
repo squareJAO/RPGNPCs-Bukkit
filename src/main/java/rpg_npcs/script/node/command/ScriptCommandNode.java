@@ -30,7 +30,7 @@ public abstract class ScriptCommandNode extends ScriptLinearNode {
 			startThisCommand(conversation, finalArguments);
 		}
 		
-		onFinished(conversation);
+		finished(conversation);
 	}
 	
 	@Override

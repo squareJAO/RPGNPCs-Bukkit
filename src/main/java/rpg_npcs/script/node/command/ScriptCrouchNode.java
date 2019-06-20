@@ -30,7 +30,7 @@ public class ScriptCrouchNode extends ScriptCommandNode {
 	}
 	
 	private boolean shouldCrouch(String argumentString) {
-		if (argumentString.length() == 0) {
+		if (argumentString == null || argumentString.length() == 0) {
 			return true;
 		}
 		

@@ -3,27 +3,26 @@ package rpg_npcs.script.node;
 import rpg_npcs.Conversation;
 
 public abstract class ScriptLinearNode extends ScriptNode {
-	
-	protected ScriptNode _nextNode;
+	protected ScriptNode nextNode;
 
 	public ScriptLinearNode() {
 		super();
 	}
 	
 	public void setNextNode(ScriptNode nextNode) {
-		_nextNode = nextNode;
+		this.nextNode = nextNode;
 	}
 	
 	@Override
 	public String toString() {
-		if (_nextNode != null) {
-			return this.getNodeRepresentation() + _nextNode.toString();
+		if (nextNode != null) {
+			return this.getNodeRepresentation() + nextNode.toString();
 		}
 		
 		return this.getNodeRepresentation();
 	}
 	
-	protected void onFinished(Conversation conversation) {
-		super.finished(_nextNode, conversation);
+	protected void finished(Conversation conversation) {
+		super.finished(nextNode, conversation);
 	}
 }

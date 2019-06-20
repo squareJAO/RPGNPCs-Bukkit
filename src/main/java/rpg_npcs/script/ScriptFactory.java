@@ -45,15 +45,14 @@ public class ScriptFactory {
 		
 		// Populate state with skeleton data
 		for (String lineID : instructions.keySet()) {
-			// Start each instruction path with a clear node
-			ScriptLinearNode baseNode = new ScriptClearNode();
-			
+			state.addScript(new Script(lineID));
+		}
+		
+		// Populate script stubs
+		for (String lineID : instructions.keySet()) {
 			String spokenTextString = instructions.get(lineID);
+			Script baseNode = state.getScript(lineID);
 			PopulateBranch(baseNode, spokenTextString, state);
-			
-			// Add to state
-			Script rootScript = new Script(lineID, baseNode);
-			state.addScript(rootScript);
 			
 			state.ResetBranchData();
 		}
@@ -73,6 +72,10 @@ public class ScriptFactory {
 	}
 	
 	private void PopulateBranch(ScriptLinearNode baseNode, String instructionString, ScriptFactoryState state) {
+		if (instructionString.length() == 0) {
+			return;
+		}
+		
 		ScriptLinearNode workingNode = baseNode;
 		
 		// Scroll and eat characters to put a tree together
@@ -80,8 +83,17 @@ public class ScriptFactory {
 		ScriptFactoryPart currentPart = null; // The current factory for the current text being eaten. If null then eating speech
 		boolean escaping = false;
 		
+		// Check if script should be a continuation
+		int startingIndex = 0;
+		if (instructionString.charAt(0) != '+') {
+			ScriptClearNode clearNode = new ScriptClearNode();
+			workingNode.setNextNode(clearNode);
+			workingNode = clearNode;
+		} else {
+			startingIndex = 1;
+		}
 		
-		for (int characterIndex = 0; characterIndex < instructionString.length(); characterIndex++) {
+		for (int characterIndex = startingIndex; characterIndex < instructionString.length(); characterIndex++) {
 			char currentCharacter = instructionString.charAt(characterIndex);
 
 			

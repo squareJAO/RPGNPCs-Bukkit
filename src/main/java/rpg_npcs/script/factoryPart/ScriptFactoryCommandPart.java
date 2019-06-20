@@ -36,7 +36,7 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 	@Override
 	protected ScriptFactoryPartData generateNode(ScriptFactoryState state, String instruction) {
 		// Split instruction
-		Matcher instructionMatcher = Pattern.compile("\\G((?<prerequisites>([^:;]+):([^:;]+)(;([^:;]+):([^:;]+))*)\\?)?(?<command>[a-zA-Z]+)( (?<arguments>.+))?$").matcher(instruction);
+		Matcher instructionMatcher = Pattern.compile("\\G((?<prerequisites>([^:;]+):([^:;]+)(;([^:;]+):([^:;]+))*)\\s*\\?)?\\s*(?<command>[a-zA-Z]+)( (?<arguments>.+))?$").matcher(instruction);
 		
 		if (!instructionMatcher.matches()) {
 			return ScriptFactoryPartData.fromError("Malformed command: " + instruction);
@@ -54,8 +54,8 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 			for (String string : prerequisites) {
 				String[] prerequisitePartStrings = string.split(":");
 				
-				String prerequisiteKeyString = prerequisitePartStrings[0];
-				String prerequisiteValueString = string.substring(prerequisiteKeyString.length() + 1);
+				String prerequisiteKeyString = prerequisitePartStrings[0].trim();
+				String prerequisiteValueString = string.substring(prerequisiteKeyString.length() + 1).trim();
 				
 				prerequisiteDataMap.put(prerequisiteKeyString, prerequisiteValueString);
 			}
@@ -63,14 +63,15 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 			ParseLog log = new ParseLog();
 			prerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisiteDataMap);
 			
-			if (prerequisiteSet == null) {
+			if (log.errorCount() > 0) {
 				return ScriptFactoryPartData.fromError(log.getErrors().getFormattedString());
 			}
 		}
 		
 		// Extract command & argument
-		String commandString = instructionMatcher.group("command");
+		String commandString = instructionMatcher.group("command").trim();
 		String argumentString = instructionMatcher.group("arguments");
+		argumentString = argumentString == null ? "" : argumentString.trim();
 		
 		for (Pattern regex : commandNodesMap.keySet()) {
 			if (regex.matcher(commandString).matches()) {

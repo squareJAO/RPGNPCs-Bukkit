@@ -77,10 +77,10 @@ public class Conversation {
 		
 		// Set data
 		isRunning = true;
-		currentNode = script.initialNode;
+		currentNode = script;
 		
 		// Start conversation
-		script.initialNode.startNode(this);
+		script.startNode(this);
 	}
 
 	/**

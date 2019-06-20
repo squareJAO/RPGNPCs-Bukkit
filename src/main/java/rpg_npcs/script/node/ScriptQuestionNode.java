@@ -34,7 +34,7 @@ public class ScriptQuestionNode extends ScriptNode {
 				public void onTouch(Player player) {
 					if (conversation.isPlayer(player)) {
 						// Queue up next node
-						finished(answerScript.initialNode, conversation);
+						finished(answerScript, conversation);
 					}
 				}
 			});

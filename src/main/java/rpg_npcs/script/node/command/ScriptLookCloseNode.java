@@ -25,7 +25,7 @@ public class ScriptLookCloseNode extends ScriptCommandNode {
 	}
 
 	private boolean shouldEnable(String argumentString) {
-		if (argumentString.length() == 0) {
+		if (argumentString == null || argumentString.length() == 0) {
 			return true;
 		}
 		

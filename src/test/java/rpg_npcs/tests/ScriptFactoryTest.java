@@ -36,6 +36,6 @@ public class ScriptFactoryTest {
 		assertTrue(resultState.doesScriptExist("script1"));
 		
 		Script script1 = resultState.getScript("script1");
-		assertEquals("script1", script1.nameString);
+		assertEquals("script1", script1.getNameString());
 	}
 }

@@ -29,7 +29,7 @@ public class ScriptPauseNode  extends ScriptLinearNode {
 				thisConversationPauseNode.stopNode(conversation);
 				
 				// Trigger next event
-				thisConversationPauseNode.onFinished(conversation);
+				thisConversationPauseNode.finished(conversation);
 			}
 		}.runTaskLater(conversation.instancingPlugin, _delay);
 		

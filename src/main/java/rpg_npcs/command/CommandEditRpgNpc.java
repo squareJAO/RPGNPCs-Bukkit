@@ -204,7 +204,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 	private boolean listNPCs(CommandSender sender) {
 		sender.sendMessage("Found " + plugin.npcs.size() + " RpgNpc(s)");
 		for (RpgNpc npc : plugin.npcs) {
-			sender.sendMessage(" - Name: " + npc.getNPCName() + "\n    Role: " + npc.getRole().nameString);
+			sender.sendMessage(" - Name: " + npc.getNPCName() + "\n    Role: " + npc.getRole().getNameString());
 		}
 		
 		return true;
@@ -380,7 +380,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 		}
 		
 		state.setValue(npc, player, value);
-		sender.sendMessage("Stored the value " + value.toString() + " in " + state.nameString);
+		sender.sendMessage("Stored the value " + value.toString() + " in " + state.getNameString());
 		return true;
 	}
 }

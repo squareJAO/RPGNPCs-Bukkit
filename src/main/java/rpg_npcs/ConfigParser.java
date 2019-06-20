@@ -289,7 +289,7 @@ public class ConfigParser {
 		List<String> rolesToResolve = new LinkedList<String>(roleNameStrings);
 		
 		rolesMap.put(baseRole);
-		roleNameStrings.add(baseRole.nameString);
+		roleNameStrings.add(baseRole.getNameString());
 		
 		log.addInfo("Found " + roleNameStrings.size() + " roles");
 
@@ -472,7 +472,7 @@ public class ConfigParser {
 		}
 		
 		List<String> parentNames = new ArrayList<String>();
-		parentNames.add(baseRole.nameString);
+		parentNames.add(baseRole.getNameString());
 		return parentNames;
 	}
 

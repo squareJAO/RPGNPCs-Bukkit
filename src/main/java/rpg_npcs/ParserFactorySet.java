@@ -11,7 +11,9 @@ import rpg_npcs.prerequisite.PrerequisiteFactory;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 import rpg_npcs.state.StateFactory;
-import rpg_npcs.state.SupportedStateType;
+import rpg_npcs.state.StateScope;
+import rpg_npcs.state.SupportedStateScopeRecords;
+import rpg_npcs.state.StateType;
 import rpg_npcs.state.SupportedStateTypeRecords;
 import rpg_npcs.trigger.TriggerFactory;
 
@@ -25,6 +27,7 @@ public class ParserFactorySet {
 	// Data for building above factories
 	private Map<String, ScriptFactoryPart> scriptParts;
 	private SupportedStateTypeRecords supportedStateTypeRecords;
+	private SupportedStateScopeRecords supportedStateScopeRecords;
 	private double defaultSpeed;
 	private int charactersPerWrap;
 	private String defaultLineStartString;
@@ -37,6 +40,7 @@ public class ParserFactorySet {
 		charactersPerWrap = 15;
 		defaultLineStartString = "";
 		supportedStateTypeRecords = new SupportedStateTypeRecords();
+		supportedStateScopeRecords = new SupportedStateScopeRecords();
 		
 		rebuild();
 	}
@@ -48,7 +52,7 @@ public class ParserFactorySet {
 		Collection<ScriptFactoryPart> scriptFactoryParts = scriptParts.values();
 		scriptFactory = new ScriptFactory(scriptFactoryParts, defaultSpeed, charactersPerWrap, defaultLineStartString);
 		
-		stateFactory = new StateFactory(supportedStateTypeRecords);
+		stateFactory = new StateFactory(supportedStateTypeRecords, supportedStateScopeRecords);
 		
 		triggerFactory = new TriggerFactory();
 		
@@ -68,8 +72,12 @@ public class ParserFactorySet {
 		return scriptParts.get(name);
 	}
 	
-	public final void addSupportedStateType(SupportedStateType<?> stateType) {
+	public final void addSupportedStateType(StateType<?> stateType) {
 		supportedStateTypeRecords.addSupportedType(stateType);
+	}
+	
+	public final void addSupportedStateScope(StateScope scope) {
+		supportedStateScopeRecords.addSupportedType(scope);
 	}
 	
 	public final ScriptFactory getScriptFactory() {

@@ -1,6 +1,6 @@
 # WARNING: Changing SQL settings while the server is running may lead to some funky results.
 # You have been warned.
-# This should be true unless you know waht you're doing
+# This should be true unless you know what you're doing
 # Recommended value: true
 useSQLite: true
 
@@ -12,9 +12,7 @@ sqlitePath: "data.sqlite"
 # You only need to fill in this data if you are using an SQL server
 # and the above option is set to false
 SQL:
-  host: ""
-  port: 33333
-  database: ""
+  url: ""
   username: ""
   password: ""
 
@@ -52,8 +50,8 @@ charactersPerLine: 20
 
 # The string that should be placed at the start of every new line. This is usually a
 # colour code but can be any text
-# Default value: ง7
-lineStartString: ง7
+# Default value: ยง7
+lineStartString: ยง7
 
 # The global triggers, visible from any role
 triggers:

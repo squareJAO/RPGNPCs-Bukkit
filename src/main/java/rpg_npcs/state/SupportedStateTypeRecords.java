@@ -4,13 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SupportedStateTypeRecords {
-	private final Map<String, SupportedStateType<?>> supportedStateTypes = new HashMap<String, SupportedStateType<?>>();
+	private final Map<String, StateType<?>> supportedStateTypes = new HashMap<String, StateType<?>>();
 	
-	public void addSupportedType(SupportedStateType<?> type) {
+	public void addSupportedType(StateType<?> type) {
 		supportedStateTypes.put(type.getDataTypeName().toLowerCase(), type);
 	}
 	
-	public SupportedStateType<?> get(String name) {
+	public StateType<?> get(String name) {
 		return supportedStateTypes.get(name.toLowerCase());
 	}
 }

@@ -1,13 +1,14 @@
 package rpg_npcs.prerequisite;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import me.clip.placeholderapi.PlaceholderAPI;
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.state.State.ComparisonResult;
-import rpg_npcs.state.SupportedStateType;
+import rpg_npcs.state.StateType;
 
 public class StatePrerequisite implements Prerequisite {
 	public static enum Comparison {
@@ -20,11 +21,11 @@ public class StatePrerequisite implements Prerequisite {
 	}
 	
 	private final Comparison comparison;
-	private final SupportedStateType<?> supportedStateType;
+	private final StateType<?> supportedStateType;
 	private final String lhsExpression;
 	private final String rhsExpression;
 	
-	public StatePrerequisite(Comparison comparison, SupportedStateType<?> supportedStateType, String lhsExpression, String rhsExpression) {
+	public StatePrerequisite(Comparison comparison, StateType<?> supportedStateType, String lhsExpression, String rhsExpression) {
 		this.comparison = comparison;
 		this.supportedStateType = supportedStateType;
 		this.lhsExpression = lhsExpression;
@@ -42,7 +43,14 @@ public class StatePrerequisite implements Prerequisite {
 		}
 		
 		// Execute expressions
-		ComparisonResult result = executeAndCompare(player, npc, supportedStateType, localLhsExpression, localRhsExpression);
+		ComparisonResult result;
+		try {
+			result = executeAndCompare(player, npc, supportedStateType, localLhsExpression, localRhsExpression);
+		} catch (IllegalArgumentException e) {
+			Bukkit.getLogger().warning(e.getMessage());
+			Bukkit.getLogger().warning("for npc " + npc.getNPCName() + ", player " + player.getDisplayName());
+			return false;
+		}
 		
 		// Match up result and comparison
 		switch (comparison) {
@@ -63,7 +71,7 @@ public class StatePrerequisite implements Prerequisite {
 		}
 	}
 	
-	private static <T> ComparisonResult executeAndCompare(Player player, RpgNpc npc, SupportedStateType<T> supportedStateType, String localLhsExpression, String localRhsExpression) {
+	private static <T> ComparisonResult executeAndCompare(Player player, RpgNpc npc, StateType<T> supportedStateType, String localLhsExpression, String localRhsExpression) {
 		T lhs = supportedStateType.executeTypedExpression(npc, player, localLhsExpression);
 		T rhs = supportedStateType.executeTypedExpression(npc, player, localRhsExpression);
 		return supportedStateType.compare(lhs, rhs);

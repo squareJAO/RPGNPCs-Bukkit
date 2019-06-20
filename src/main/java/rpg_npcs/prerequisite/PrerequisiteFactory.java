@@ -8,7 +8,7 @@ import org.apache.commons.lang.NotImplementedException;
 import rpg_npcs.ParseLog;
 import rpg_npcs.ParserFactorySet;
 import rpg_npcs.prerequisite.StatePrerequisite.Comparison;
-import rpg_npcs.state.SupportedStateType;
+import rpg_npcs.state.StateType;
 
 public class PrerequisiteFactory {
 	public static class PrerequisiteFactoryReturnData {
@@ -36,7 +36,7 @@ public class PrerequisiteFactory {
 			break;
 		case "state":
 			String valueTypeString = value.split(" ")[0];
-			SupportedStateType<?> supportedStateType = parserFactorySet.getSupportedStateTypeRecords().get(valueTypeString);
+			StateType<?> supportedStateType = parserFactorySet.getSupportedStateTypeRecords().get(valueTypeString);
 			
 			if (supportedStateType == null) {
 				returnData.log.addError("Unrecognised state type: '" + valueTypeString + "'");

@@ -21,7 +21,6 @@ import rpg_npcs.RpgNpc;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.state.State;
-import rpg_npcs.state.State.StorageType;
 
 public class CommandEditRpgNpc implements TabExecutor {
 	private final RPGNPCsPlugin plugin;
@@ -61,7 +60,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 			return list;
 		}
 		
-		RPGNPCsPlugin plugin = (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
+		RPGNPCsPlugin plugin = RPGNPCsPlugin.getPlugin();
 		RpgNpc npc = plugin.getSelectedRpgNpc(sender);
 		
 		Role role;
@@ -90,20 +89,18 @@ public class CommandEditRpgNpc implements TabExecutor {
 			if ((args[0].equalsIgnoreCase("get") || args[0].equalsIgnoreCase("set"))
 					&& args[1].equalsIgnoreCase("state")
 					&& statesMap.keySet().contains(args[2])) {
-				StorageType storageType = statesMap.get(args[2]).getStorageType();
-				if (storageType == StorageType.PLAYER || storageType == StorageType.PLAYERNPC) {
-					if (args.length == 4) {
-						list.add("for");
-						return list;
-					} else if (args[3].equalsIgnoreCase("for")) {
-						// Add the names of all online players
-						Set<String> playerNameSet = Bukkit.getOnlinePlayers()
-								.parallelStream().map(p -> p.getName())
-								.filter(playerName -> (playerName.contains(args[4]) || playerName.equals(args[4])))
-								.collect(Collectors.toSet());
-						list.addAll(playerNameSet);
-						return list;
-					}
+				
+				if (args.length == 4) {
+					list.add("for");
+					return list;
+				} else if (args[3].equalsIgnoreCase("for")) {
+					// Add the names of all online players
+					Set<String> playerNameSet = Bukkit.getOnlinePlayers()
+							.parallelStream().map(p -> p.getName())
+							.filter(playerName -> (playerName.contains(args[4]) || playerName.equals(args[4])))
+							.collect(Collectors.toSet());
+					list.addAll(playerNameSet);
+					return list;
 				}
 			}
 		}
@@ -231,35 +228,11 @@ public class CommandEditRpgNpc implements TabExecutor {
 			
 			String variableTypeString = state.getType().getDataTypeName();
 			
-			// Get stored value string
-			String valueString = "";
-			
-			switch (state.getStorageType()) {
-			case GLOBAL:
-				valueString = state.getValue(null, null).toString();
-				break;
-			
-			case NPC:
-				if (selectedNpc != null) {
-					valueString = state.getValue(selectedNpc, null).toString();
-				} else {
-					valueString = "[NPC specific]";
-				}
-				break;
-				
-			case PLAYER:
-				valueString = "[Player specific]";
-				break;
-				
-			case PLAYERNPC:
-				valueString = "[PlayerNpc specific]";
-				break;
-
-			default:
-				break;
+			if (state.getScopeProviders().isEmpty()) {
+				sender.sendMessage(" - '" + stateName + "' (" + variableTypeString + "): " + state.getValue(null, null));
+			} else {
+				sender.sendMessage(" - '" + stateName + "' (" + variableTypeString + ")");
 			}
-			
-			sender.sendMessage(" - '" + stateName + "' (" + variableTypeString + "): " + valueString);
 		}
 		
 		return true;
@@ -312,12 +285,12 @@ public class CommandEditRpgNpc implements TabExecutor {
 		
 		State<?> stateToDisplay = statesMap.get(variableNameString);
 		
-		if (selectedNpc == null && (stateToDisplay.getStorageType() == StorageType.NPC || stateToDisplay.getStorageType() == StorageType.PLAYERNPC)) {
+		if (selectedNpc == null) {
 			sender.sendMessage("No npc selected");
 			return false;
 		}
 		
-		if (player == null && (stateToDisplay.getStorageType() == StorageType.PLAYER || stateToDisplay.getStorageType() == StorageType.PLAYERNPC)) {
+		if (player == null) {
 			sender.sendMessage("No player selected");
 			return false;
 		}
@@ -379,12 +352,12 @@ public class CommandEditRpgNpc implements TabExecutor {
 		
 		State<?> stateToStoreIn = statesMap.get(variableNameString);
 		
-		if (selectedNpc == null && (stateToStoreIn.getStorageType() == StorageType.NPC || stateToStoreIn.getStorageType() == StorageType.PLAYERNPC)) {
+		if (selectedNpc == null) {
 			sender.sendMessage("No npc selected");
 			return false;
 		}
 		
-		if (player == null && (stateToStoreIn.getStorageType() == StorageType.PLAYER || stateToStoreIn.getStorageType() == StorageType.PLAYERNPC)) {
+		if (player == null) {
 			sender.sendMessage("No player selected");
 			return false;
 		}

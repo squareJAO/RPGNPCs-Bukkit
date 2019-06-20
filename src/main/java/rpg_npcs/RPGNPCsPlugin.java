@@ -1,5 +1,6 @@
 package rpg_npcs;
 
+import java.beans.PropertyVetoException;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -29,7 +30,13 @@ import rpg_npcs.script.factoryPart.ScriptFactoryStatusPart;
 import rpg_npcs.script.node.command.ScriptCrouchNode;
 import rpg_npcs.script.node.command.ScriptLookCloseNode;
 import rpg_npcs.script.node.command.ScriptStoreNode;
+import rpg_npcs.sql.MyPostgreSQL;
+import rpg_npcs.sql.MySQL;
+import rpg_npcs.sql.MySQLite;
 import rpg_npcs.state.NumberStateType;
+import rpg_npcs.state.StateNpcScope;
+import rpg_npcs.state.StatePlayerScope;
+import rpg_npcs.state.StateWorldScope;
 
 public class RPGNPCsPlugin extends JavaPlugin {
 	public static MySQL sql;
@@ -103,26 +110,34 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		
 		// Supported types
 		factorySet.addSupportedStateType(new NumberStateType());
+		
+		// Supported scopes
+		factorySet.addSupportedStateScope(new StateNpcScope());
+		factorySet.addSupportedStateScope(new StatePlayerScope());
+		factorySet.addSupportedStateScope(new StateWorldScope());
 	}
 
 	private void createSQL() {
 		boolean isSQLite = getConfig().getBoolean("useSQLite");
 		
-		String sqlitePathString = getConfig().getString("sqlitePath");
-		if (!Paths.get(sqlitePathString).isAbsolute()) {
-			sqlitePathString = (new File(getDataFolder(), sqlitePathString)).getAbsolutePath();
-		}
-		
-		String sqlHost = getConfig().getString("SQL.host");
-		String sqlPort = getConfig().getString("SQL.port");
-		String sqlDatabase = getConfig().getString("SQL.database");
-		String sqlUsername = getConfig().getString("SQL.username");
-		String sqlPassword = getConfig().getString("SQL.password");
-		
 		if (isSQLite) {
-			sql = MySQL.makeSQLite(sqlitePathString);
+			String sqlitePathString = getConfig().getString("sqlitePath");
+			if (!Paths.get(sqlitePathString).isAbsolute()) {
+				sqlitePathString = (new File(getDataFolder(), sqlitePathString)).getAbsolutePath();
+			}
+			
+			sql = new MySQLite(sqlitePathString);
 		} else {
-			sql = MySQL.makeSQL(sqlHost, sqlPort, sqlDatabase, sqlUsername, sqlPassword);
+			String sqlUrl = getConfig().getString("SQL.url");
+			String sqlUsername = getConfig().getString("SQL.username");
+			String sqlPassword = getConfig().getString("SQL.password");
+			try {
+				sql = new MyPostgreSQL(sqlUrl, sqlUsername, sqlPassword);
+			} catch (PropertyVetoException e) {
+				e.printStackTrace();
+				Bukkit.getPluginManager().disablePlugin(this);
+				return;
+			}
 		}
 		
 		// Create tables
@@ -224,5 +239,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 		
 		return null;
+	}
+	
+	public static RPGNPCsPlugin getPlugin() {
+		return (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
 	}
 }

@@ -5,88 +5,98 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.role.RoleNamedProperty;
 
 public class State <T> extends RoleNamedProperty {
-	private static class PlayerNpc {
-		public final RpgNpc npc;
-		public final OfflinePlayer player;
-		
-		public PlayerNpc(RpgNpc npc, OfflinePlayer player) {
-			this.npc = npc;
-			this.player = player;
-		}
-		
-		@Override
-		public int hashCode() {
-			return npc.hashCode() & player.hashCode();
-		}
+	public enum ComparisonResult {
+		LESS_THAN,
+		EQUAL_TO,
+		GREATER_THAN,
+		UNDEFINED
 	}
-	
-	private final StorageType storageType; // Global = same for all npcs with a role, Npc = unique to NPCs
 	
 	private final String stateUUIDString; // The identifier, unique to this state, used when storing this state in the database
-	
-	private final SupportedStateType<T> type;
-	
+	private final StateType<T> type;
+	private final List<StateScope> scopeProviders;
 	private final T defaultValue;
-
-	private T globalValueCache;
-	private Map<RpgNpc, T> npcValueMapCache;
-	private Map<OfflinePlayer, T> playerValueMapCache;
-	private Map<PlayerNpc, T> playerNpcValueMapCache;
+	private final Map<String, T> valueCache;
 	
-	public enum StorageType {
-		GLOBAL,
-		NPC,
-		PLAYER, 
-		PLAYERNPC
-	}
-	
-	public State(String name, String uuid, SupportedStateType<T> type, StorageType storageType, T defaultValue) {
+	public State(String name, String uuid, StateType<T> type, List<StateScope> scopeProviders, T defaultValue) {
 		super(name);
 		
 		this.defaultValue = defaultValue;
-		this.storageType = storageType;
 		this.stateUUIDString = uuid;
 		this.type = type;
+		this.scopeProviders = scopeProviders;
 		
-		// Initialise variables
-		switch (storageType) {
-		case GLOBAL:
-    		globalValueCache = defaultValue; // Assume default until requests cleared
-    		getStoredGlobalValueAsync();
-			break;
-		case NPC:
-			this.npcValueMapCache = new HashMap<RpgNpc, T>();
-			break;
-		case PLAYER:
-			this.playerValueMapCache = new HashMap<OfflinePlayer, T>();
-			break;
-		case PLAYERNPC:
-			this.playerNpcValueMapCache = new HashMap<PlayerNpc, T>();
-			break;
-		}
+		// Initialise cache
+		valueCache = new HashMap<String, T>();
 	}
 	
-	private void getStoredGlobalValueAsync() {
-		// load from database using multithreading
-		new Thread() {
+	private String getUuidString(RpgNpc npc, OfflinePlayer player) {
+		String scopeUUIDString = stateUUIDString;
+		
+		for (StateScope stateScope : scopeProviders) {
+			scopeUUIDString += "&" + stateScope.getNameString() + "=" + stateScope.getUuidString(npc, player);
+		}
+		
+		return scopeUUIDString;
+	}
+	
+	public StateType<T> getType() {
+		return type;
+	}
+	
+	public T getDefaultValue() {
+		return defaultValue;
+	}
+	
+	public List<StateScope> getScopeProviders() {
+		return scopeProviders;
+	}
+	
+	public T getValue(RpgNpc npc, OfflinePlayer player) {
+		String uuidString = getUuidString(npc, player);
+		
+		if (valueCache.containsKey(uuidString)) {
+			return valueCache.get(uuidString);
+		}
+		
+		T cachedT = getStoredValue(uuidString);
+		
+		// Collections shouldn't be modified in gets in case of async so add a task to update the cache
+		new BukkitRunnable() {
 			@Override
-		    public void run() 
-		    {
-	    		globalValueCache = getStoredValue(stateUUIDString);
-		    }
-		}.run();
+			public void run() {
+				// Check for other events having set a value in the meantime
+				if (valueCache.containsKey(uuidString)) {
+					return;
+				}
+				
+				setValue(npc, player, cachedT);
+			}
+		}.runTaskLater(RPGNPCsPlugin.getPlugin(), 1);
+		
+		return cachedT;
+	}
+	
+	public void setValue(RpgNpc npc, OfflinePlayer player, T value) {
+		String uuidString = getUuidString(npc, player);
+
+		valueCache.put(uuidString, value);
+		
+		// Store in database using multithreading
+		setStoredValueAsync(uuidString, value);
 	}
 	
 	private T getStoredValue(String uuidString) {
@@ -112,17 +122,7 @@ public class State <T> extends RoleNamedProperty {
 
 					value = defaultValue;
 				}
-    		} else { // If 0 results, store default value
-	    		String valueString = type.valueToString(defaultValue);
-	    		
-	    		String insertCommand = "INSERT INTO global_states (state_uuid, value) VALUES (?, ?)";
-		    	PreparedStatement insertStatement = connection.prepareStatement(insertCommand);
-		    	
-		    	insertStatement.setString(1, uuidString);
-		    	insertStatement.setString(2, valueString);
-		    	
-		    	insertStatement.execute();
-		    	
+    		} else { // If 0 results, return default value
 		    	value = defaultValue;
     		}
 	    	
@@ -136,104 +136,21 @@ public class State <T> extends RoleNamedProperty {
 		return defaultValue;
 	}
 	
-	private String makeNpcUuidString(RpgNpc npc) {
-		return "npc." + npc.getUUIDString() + ":" + stateUUIDString;
-	}
-	
-	private String makePlayerUuidString(OfflinePlayer player) {
-		return "player." + player.getUniqueId() + ":" + stateUUIDString;
-	}
-	
-	private String makePlayerNpcUuidString(PlayerNpc playerNpc) {
-		return "playerNpc." + playerNpc.player.getUniqueId() + "." + playerNpc.npc.getUUIDString() + ":" + stateUUIDString;
-	}
-	
-	public T getValue(RpgNpc npc, OfflinePlayer player) {
-		switch (storageType) {
-		case GLOBAL:
-			// Assume value always cached
-			return globalValueCache;
-
-		case NPC:
-			// Check if value cached
-			if (npcValueMapCache.containsKey(npc)) {
-				return npcValueMapCache.get(npc);
-			}
-			
-			// First time a value is requested a blocking request is unavoidable
-			return getStoredValue(makeNpcUuidString(npc));
-
-		case PLAYER:
-			// See above
-			if (playerValueMapCache.containsKey(player)) {
-				return playerValueMapCache.get(player);
-			}
-			
-			return getStoredValue(makePlayerUuidString(player));
-
-		case PLAYERNPC:
-			// Create playernpc object
-			PlayerNpc playerNpc = new PlayerNpc(npc, player);
-			
-			// See above
-			if (playerNpcValueMapCache.containsKey(playerNpc)) {
-				return playerNpcValueMapCache.get(playerNpc);
-			}
-			
-			return getStoredValue(makePlayerNpcUuidString(playerNpc));
-		}
-		
-		throw new NotImplementedException();
-	}
-	
-	public void setValue(RpgNpc npc, OfflinePlayer player, T value) {
-		String valueString = type.valueToString(value);
-		
-		String storageUUIDString;
-		switch (storageType) {
-		case GLOBAL:
-			globalValueCache = value;
-			storageUUIDString = stateUUIDString;
-			break;
-		case NPC:
-			npcValueMapCache.put(npc, value);
-			storageUUIDString = makeNpcUuidString(npc);
-			break;
-		case PLAYER:
-			playerValueMapCache.put(player, value);
-			storageUUIDString = makePlayerUuidString(player);
-			break;
-		case PLAYERNPC:
-			// Create playernpc object
-			PlayerNpc playerNpc = new PlayerNpc(npc, player);
-			
-			playerNpcValueMapCache.put(playerNpc, value);
-			storageUUIDString = makePlayerNpcUuidString(playerNpc);
-			break;
-		default:
-			throw new NotImplementedException();
-		}
-		
-		// Store in database using multithreading
+	private void setStoredValueAsync(String uuidString, T value) {
 		new Thread() {
 			@Override
 		    public void run() 
-		    { 
-				// Check that an entry exists and that it needs updating
-				T storedValue = getStoredValue(storageUUIDString);
-				
-				if (storedValue.equals(value)) {
-					return;
-				}
+		    {
+				String valueString = type.valueToString(value);
 				
 		    	try {
 		    		Connection connection = RPGNPCsPlugin.sql.connect();
 			    	
-		    		String command = "UPDATE global_states SET value = ? WHERE state_uuid = ?";
+		    		String command = "INSERT OR REPLACE INTO global_states (state_uuid, value) VALUES (?, ?)";
 			    	PreparedStatement statement = connection.prepareStatement(command);
-			    	
-			    	statement.setString(1, valueString);
-			    	statement.setString(2, storageUUIDString);
+
+			    	statement.setString(1, uuidString);
+			    	statement.setString(2, valueString);
 			    	
 			    	statement.executeUpdate();
 			    	
@@ -244,24 +161,5 @@ public class State <T> extends RoleNamedProperty {
 				}
 		    }
 		}.run();
-	}
-	
-	public SupportedStateType<T> getType() {
-		return type;
-	}
-	
-	public T getDefaultValue() {
-		return defaultValue;
-	}
-	
-	public StorageType getStorageType() {
-		return storageType;
-	}
-	
-	public enum ComparisonResult {
-		LESS_THAN,
-		EQUAL_TO,
-		GREATER_THAN,
-		UNDEFINED
 	}
 }

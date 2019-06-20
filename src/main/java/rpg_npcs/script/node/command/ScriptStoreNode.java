@@ -7,7 +7,7 @@ import org.bukkit.Bukkit;
 import rpg_npcs.Conversation;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.state.State;
-import rpg_npcs.state.SupportedStateType;
+import rpg_npcs.state.StateType;
 
 public class ScriptStoreNode extends ScriptCommandNode {
 	public ScriptStoreNode(String argumentString) {
@@ -52,7 +52,7 @@ public class ScriptStoreNode extends ScriptCommandNode {
 	
 	// Need a typed function because java doesn't like generics
 	private <T> void executeAndStore(State<T> resultState, Conversation conversation, String expression) throws IllegalArgumentException {
-		SupportedStateType<T> type = resultState.getType();
+		StateType<T> type = resultState.getType();
 		
 		T result = type.executeTypedExpression(conversation.getNpc(), conversation.getPlayer(), expression);
 		

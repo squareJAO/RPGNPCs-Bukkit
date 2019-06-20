@@ -2,7 +2,6 @@ package rpg_npcs;
 
 import java.util.Random;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -30,7 +29,7 @@ public class RpgTrait extends Trait implements RpgNpc {
 	public RpgTrait() {
 		super("Rpgnpc");
 		
-		instancingPlugin = (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
+		instancingPlugin = RPGNPCsPlugin.getPlugin();
 	}
 	
 	@Override

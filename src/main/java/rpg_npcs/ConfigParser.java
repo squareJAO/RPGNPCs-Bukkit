@@ -35,7 +35,7 @@ public class ConfigParser {
 	}
 	
 	static final int[] WEIGHT_MAPPING = {100, 100, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
-	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", "__", "%", Role.DEFAULT_ROLE_NAME_STRING};
+	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", "__", "%", "&", "=", Role.DEFAULT_ROLE_NAME_STRING};
 	
 	private final ParserFactorySet factorySet;
 	
@@ -170,22 +170,22 @@ public class ConfigParser {
 			String typeString = stateConfigSection.getString("type");
 			
 			// Get scope
-			String scopeString = "npc";
+			String scopeString = "";
 			if (stateConfigSection.isString("scope")) {
 				scopeString = stateConfigSection.getString("scope");
 			}
 			
 			// Get default
-			Object defaultValue = null;
+			String defaultValueString = null;
 			if (stateConfigSection.contains("default")) {
-				defaultValue = stateConfigSection.get("default");
+				defaultValueString = stateConfigSection.getString("default");
 			}
 			
 			// Create UUID
 			String uuid = scopeName + "." + stateNameString + "." + typeString;
 			
 			// Create state
-			StateFactoryReturnData data = factorySet.getStateFactory().makeState(stateNameString, typeString, scopeString, defaultValue, uuid);
+			StateFactoryReturnData data = factorySet.getStateFactory().makeState(stateNameString, typeString, scopeString, defaultValueString, uuid);
 			if (data.state != null) {
 				statesMap.put(data.state);
 				log.addInfo(" - type: " + typeString);

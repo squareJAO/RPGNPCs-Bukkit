@@ -2,6 +2,8 @@ package rpg_npcs.script.node;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -10,6 +12,8 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import rpg_npcs.Conversation;
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.SpeechBubble;
+import rpg_npcs.role.RolePropertyMap;
+import rpg_npcs.state.State;
 
 public class ScriptTextNode extends ScriptLinearNode {
 	protected static final int TICKS_PER_CYCLE = 1;
@@ -41,28 +45,41 @@ public class ScriptTextNode extends ScriptLinearNode {
 		ScriptTextNode thisConversationNode = this;
 		SpeechBubble bubble = conversation.getSpeechBubble();
 		
-		String textString;
+		String textString = templateTextString;
 
 		// Check if PlaceholdersAPI is present and format text
 		if (RPGNPCsPlugin.hasPlaceholderAPI()) {
-			textString = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), templateTextString);
-		} else {
-			textString = templateTextString;
+			textString = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), textString);
 		}
+		
+		// Add variable values
+		RolePropertyMap<State<?>> statesMap = conversation.getNpc().getRole().getAllVisibleStates();
+		Matcher textStringMatcher = Pattern.compile("%([^%]*)%").matcher(textString);
+		while(textStringMatcher.find()) {
+			String variableNameString = textStringMatcher.group(1);
+			
+			State<?> state = statesMap.get(variableNameString);
+			if (state!= null) {
+				String valueString = state.getValue(conversation.getNpc(), conversation.getPlayer()).toString();
+				textString = textString.replace("%" + variableNameString + "%", valueString);
+			}
+		}
+		
+		final String finalTextString = textString;
 		
 		// Create a new task to add text
 		BukkitTask newTask = new BukkitRunnable() {
-			private double _charsToAdd = 0;
-			protected int _nextCharIndex = 0;
+			private double charsToAdd = 0;
+			protected int nextCharIndex = 0;
 			
 			public void run() {
 				// Add char multiplier
-				_charsToAdd += textSpeed * TICKS_PER_CYCLE;
+				charsToAdd += textSpeed * TICKS_PER_CYCLE;
 				
 				// Add any chars that need added
-				while (_charsToAdd > 1) {
+				while (charsToAdd > 1) {
 					// Check if finished
-					if (_nextCharIndex >= textString.length()) {
+					if (nextCharIndex >= finalTextString.length()) {
 						// Cancel this task
 						thisConversationNode.stopNode(conversation);
 						
@@ -74,8 +91,8 @@ public class ScriptTextNode extends ScriptLinearNode {
 					
 					boolean hasAddedChar = false; // Eats characters until a normal character is hit
 					
-					while (!hasAddedChar && _nextCharIndex < textString.length()) {
-						char nextChar = textString.charAt(_nextCharIndex);
+					while (!hasAddedChar && nextCharIndex < finalTextString.length()) {
+						char nextChar = finalTextString.charAt(nextCharIndex);
 						
 						switch (nextChar) {
 						// On a newline a new line should be added to the hologram
@@ -84,14 +101,14 @@ public class ScriptTextNode extends ScriptLinearNode {
 							bubble.addNewLine();
 							bubble.setLastLineText(defaultLineStartString);
 							
-							_nextCharIndex += 1;
+							nextCharIndex += 1;
 							break;
 						// On a formatting char add the formatting code but set to add another char too
 						case '§':
-							if (_nextCharIndex + 1 < textString.length()) {
-								bubble.setLastLineText(bubble.getLastLineString() + '§' + textString.charAt(_nextCharIndex + 1));
+							if (nextCharIndex + 1 < finalTextString.length()) {
+								bubble.setLastLineText(bubble.getLastLineString() + '§' + finalTextString.charAt(nextCharIndex + 1));
 							}
-							_nextCharIndex += 2;
+							nextCharIndex += 2;
 							break;
 						// On a space, check to wrap line
 						case ' ':
@@ -105,7 +122,7 @@ public class ScriptTextNode extends ScriptLinearNode {
 								bubble.setLastLineText(bubble.getLastLineString() + ' ');
 							}
 							
-							_nextCharIndex += 1;
+							nextCharIndex += 1;
 							
 							break;
 						// Eat a default character and set has added char
@@ -113,21 +130,21 @@ public class ScriptTextNode extends ScriptLinearNode {
 							bubble.setLastLineText(bubble.getLastLineString() + nextChar);
 							
 							hasAddedChar = true;
-							_nextCharIndex += 1;
+							nextCharIndex += 1;
 							
 							// Check for delay
 							if (SHORTPAUSE_CHARACTERS.contains("" + nextChar)) {
-								_charsToAdd -= SHORTPAUSE * TICKS_PER_CYCLE;
+								charsToAdd -= SHORTPAUSE * TICKS_PER_CYCLE;
 							}
 							if (LONGPAUSE_CHARACTERS.contains("" + nextChar)) {
-								_charsToAdd -= LONGPAUSE * TICKS_PER_CYCLE;
+								charsToAdd -= LONGPAUSE * TICKS_PER_CYCLE;
 							}
 							
 							break;
 						}
 					}
 					
-					_charsToAdd -= 1;
+					charsToAdd -= 1;
 				}
 			}
 		}.runTaskTimer(conversation.instancingPlugin, 1, TICKS_PER_CYCLE);

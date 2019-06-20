@@ -107,7 +107,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		factorySet.addScriptFactoryPart("speed", new ScriptFactorySpeedPart());
 		factorySet.addScriptFactoryPart("command", scriptFactoryCommandPart);
 		factorySet.addScriptFactoryPart("question", new ScriptFactoryQuestionPart());
-		factorySet.addScriptFactoryPart("status", new ScriptFactoryStatusPart());
+		factorySet.addScriptFactoryPart("status", new ScriptFactoryStatusPart(factorySet));
 		
 		// Supported types
 		factorySet.addSupportedStateType(new NumberStateType());

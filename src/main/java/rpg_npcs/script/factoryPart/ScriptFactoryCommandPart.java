@@ -36,7 +36,7 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 	@Override
 	protected ScriptFactoryPartData generateNode(ScriptFactoryState state, String instruction) {
 		// Split instruction
-		Matcher instructionMatcher = Pattern.compile("\\G((?<prerequisites>([^:;]+):([^:;]+)(;([^:;]+):([^:;]+))*)\\s*\\?)?\\s*(?<command>[a-zA-Z]+)( (?<arguments>.+))?$").matcher(instruction);
+		Matcher instructionMatcher = Pattern.compile("\\G((?<prerequisites>([^:;]+):([^:;]+)(;([^:;]+):([^:;]+))*)\\s*\\?\\s*)?(?<command>[a-zA-Z]+)( (?<arguments>.+))?$").matcher(instruction);
 		
 		if (!instructionMatcher.matches()) {
 			return ScriptFactoryPartData.fromError("Malformed command: " + instruction);
@@ -47,21 +47,8 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 		// Extract any prerequisites
 		PrerequisiteSet prerequisiteSet = new PrerequisiteSet();
 		if (prerequisitesString != null) {
-			String[] prerequisites = prerequisitesString.split(";");
-			
-			Map<String, String> prerequisiteDataMap = new HashMap<String, String>();
-			
-			for (String string : prerequisites) {
-				String[] prerequisitePartStrings = string.split(":");
-				
-				String prerequisiteKeyString = prerequisitePartStrings[0].trim();
-				String prerequisiteValueString = string.substring(prerequisiteKeyString.length() + 1).trim();
-				
-				prerequisiteDataMap.put(prerequisiteKeyString, prerequisiteValueString);
-			}
-			
 			ParseLog log = new ParseLog();
-			prerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisiteDataMap);
+			prerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisitesString);
 			
 			if (log.errorCount() > 0) {
 				return ScriptFactoryPartData.fromError(log.getErrors().getFormattedString());

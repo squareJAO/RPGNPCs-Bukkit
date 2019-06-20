@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.yaml.snakeyaml.parser.ParserException;
 
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
@@ -96,7 +97,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	
 	private void addDefaultFactoryData() {
 		// Command factory part
-		ScriptFactoryCommandPart scriptFactoryCommandPart = new ScriptFactoryCommandPart();
+		ScriptFactoryCommandPart scriptFactoryCommandPart = new ScriptFactoryCommandPart(factorySet);
 		scriptFactoryCommandPart.addCommandNodeGenerator("crouch", ScriptCrouchNode.class);
 		scriptFactoryCommandPart.addCommandNodeGenerator("look(?:close)?", ScriptLookCloseNode.class);
 		scriptFactoryCommandPart.addCommandNodeGenerator("(?:store|set)(?:in)?", ScriptStoreNode.class);
@@ -178,7 +179,15 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 		
 		// Reload
-		reloadConfig();
+		try {
+			reloadConfig();
+		} catch (ParserException e) {
+			ParseLog errorLog = new ParseLog();
+			errorLog.addError("Parser exception:");
+			errorLog.addError(e.getMessage());
+			errorLog.addError(e.getProblem());
+			return errorLog;
+		}
 		
 		// Load metavalues
 		verboseLogging = getConfig().getBoolean("verboseLogging");

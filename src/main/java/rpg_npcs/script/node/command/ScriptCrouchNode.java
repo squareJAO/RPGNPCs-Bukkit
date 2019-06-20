@@ -8,10 +8,11 @@ import org.bukkit.entity.Player;
 
 import rpg_npcs.Conversation;
 import rpg_npcs.ParsingUtils;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 
 public class ScriptCrouchNode extends ScriptCommandNode {
-	public ScriptCrouchNode(String arguments) {
-		super(arguments);
+	public ScriptCrouchNode(String arguments, PrerequisiteSet prerequisiteSet) {
+		super(arguments, prerequisiteSet);
 	}
 
 	@Override

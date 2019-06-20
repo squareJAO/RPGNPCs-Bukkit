@@ -1,5 +1,7 @@
 package rpg_npcs.script.factoryPart;
 
+import org.bukkit.Bukkit;
+
 import rpg_npcs.script.Script;
 import rpg_npcs.script.ScriptFactoryPartData;
 import rpg_npcs.script.ScriptFactoryState;
@@ -20,6 +22,7 @@ public class ScriptFactoryStatusPart extends ScriptFactoryPart {
 		if (instruction == "") {
 			newNode = new ScriptClearNode();
 		} else {
+			Bukkit.getLogger().info("Visable scripts: " + String.join(", ", state.getAllScripts().keySet()));
 			// Interpret as node to jump to
 			if (!state.doesScriptExist(instruction)) {
 				return ScriptFactoryPartData.fromError("Unknown script to branch to: " + instruction);

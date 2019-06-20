@@ -1,6 +1,5 @@
 package rpg_npcs.trigger;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,12 +13,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
 import rpg_npcs.WeightedSet;
-import rpg_npcs.prerequisite.Prerequisite;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.role.RoleNamedProperty;
 import rpg_npcs.script.Script;
 
 public abstract class Trigger extends RoleNamedProperty implements Listener {
-	private final Collection<Prerequisite> prerequisites;
+	private final PrerequisiteSet prerequisites;
 	private final Map<RpgNpc, WeightedSet<Script>> npcScripts;
 	private final int priority;
 	
@@ -27,7 +26,7 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 	// should not be triggered again
 	private final Set<Player> lockedPlayers = new HashSet<Player>();
 	
-	public Trigger(String nameString, Collection<Prerequisite> prerequisites, int priority) {
+	public Trigger(String nameString, PrerequisiteSet prerequisites, int priority) {
 		super(nameString);
 		this.npcScripts = new HashMap<RpgNpc, WeightedSet<Script>>();
 		this.prerequisites = prerequisites;
@@ -46,7 +45,7 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 		return priority;
 	}
 	
-	public Collection<Prerequisite> getPrerequisites() {
+	public PrerequisiteSet getPrerequisites() {
 		return prerequisites;
 	}
 	
@@ -64,7 +63,7 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 				try {
 					for (RpgNpc npc : npcScripts.keySet()) {
 						if (npc.isSpawned() && npc.getEntity().getWorld() == player.getWorld()
-							&& priority > npc.getConversationPriority() && arePrerequisitesMet(player, npc)) {
+							&& priority > npc.getConversationPriority() && prerequisites.areMet(player, npc)) {
 							// Return to being synchronous
 							startConversationSynchronous(player, npc);
 						}
@@ -113,20 +112,5 @@ public abstract class Trigger extends RoleNamedProperty implements Listener {
 		};
 		
 		unlockPlayerTask.runTaskLater(RPGNPCsPlugin.getPlugin(), delay);
-	}
-
-	/**
-	 * Checks if all of the prerequisites for this event are met
-	 * @param player The player that the event is triggered by
-	 * @return A boolean, true if prerequisites are met
-	 */
-	private final boolean arePrerequisitesMet(Player player, RpgNpc npc) {
-		for (Prerequisite dialoguePrerequisite : prerequisites) {
-			if (!dialoguePrerequisite.isMet(player, npc)) {
-				return false;
-			}
-		}
-		
-		return true;
 	}
 }

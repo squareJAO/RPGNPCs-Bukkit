@@ -6,10 +6,11 @@ import org.bukkit.Bukkit;
 
 import rpg_npcs.Conversation;
 import rpg_npcs.ParsingUtils;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 
 public class ScriptLookCloseNode extends ScriptCommandNode {
-	public ScriptLookCloseNode(String argumentString) {
-		super(argumentString);
+	public ScriptLookCloseNode(String argumentString, PrerequisiteSet prerequisiteSet) {
+		super(argumentString, prerequisiteSet);
 	}
 
 	@Override

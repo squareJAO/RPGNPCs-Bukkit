@@ -6,13 +6,13 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 
-import rpg_npcs.prerequisite.Prerequisite;
-import rpg_npcs.prerequisite.PrerequisiteFactory.PrerequisiteFactoryReturnData;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.Script;
@@ -35,7 +35,7 @@ public class ConfigParser {
 	}
 	
 	static final int[] WEIGHT_MAPPING = {100, 100, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
-	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", "__", "%", "&", "=", Role.DEFAULT_ROLE_NAME_STRING};
+	static final String[] INVALID_NAME_STRINGS = {".", ":", ";", "/", "\\", "__", "%", "&", "=", "?", Role.DEFAULT_ROLE_NAME_STRING};
 	
 	private final ParserFactorySet factorySet;
 	
@@ -243,7 +243,7 @@ public class ConfigParser {
 			}
 			
 			// Check if any prerequisites exist
-			Set<Prerequisite> prerequisites;
+			PrerequisiteSet prerequisites;
 			if (triggerConfigSection.contains("prerequisites")) {
 				if (!triggerConfigSection.isConfigurationSection("prerequisites")) {
 					// If prerequisites are badly formatted then skip this trigger
@@ -255,7 +255,7 @@ public class ConfigParser {
 				
 				prerequisites = getPrerequisites(log, prerequisiteConfigSection);
 			} else {
-				prerequisites = new HashSet<Prerequisite>();
+				prerequisites = new PrerequisiteSet();
 				log.addInfo(" - no prerequisites");
 			}
 			
@@ -272,30 +272,16 @@ public class ConfigParser {
 		return triggerMap;
 	}
 
-	private Set<Prerequisite> getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
-		Set<Prerequisite> prerequisites = new HashSet<Prerequisite>();
-		
+	private PrerequisiteSet getPrerequisites(ParseLog log, ConfigurationSection prerequisiteConfigSection) {
 		// Create prerequisites
 		Map<String, Object> prerequisitesConfigSet = prerequisiteConfigSection.getValues(false);
-		log.addInfo(" - prerequisites:");
-		for (String keyString : prerequisitesConfigSet.keySet()) {
-			// Extract key and value
-			String valueString = prerequisitesConfigSet.get(keyString).toString();
-			
-			// Convert to prerequisite
-			PrerequisiteFactoryReturnData returnPrerequisiteData = factorySet.getPrerequisiteFactory().createPrerequisite(keyString, valueString);
-			
-			if (returnPrerequisiteData.prerequisite != null) {
-				prerequisites.add(returnPrerequisiteData.prerequisite);
-			}
-			
-			log.addInfo("   - " + keyString + ": " + valueString);
-			log.add(returnPrerequisiteData.log);
+		Map<String, String> prerequisiteDataMap = new HashMap<String, String>(prerequisitesConfigSet.size());
+		for (Entry<String, Object> entry : prerequisitesConfigSet.entrySet()) {
+			prerequisiteDataMap.put(entry.getKey(), entry.getValue().toString());
 		}
 		
-		return prerequisites;
+		return factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisiteDataMap);
 	}
-
 	
 	private RolePropertyMap<Role> getRoles(ParseLog log, ConfigurationSection rolesConfigSection, Role baseRole, int defaultEventPriority) {
 		RolePropertyMap<Role> rolesMap = new RolePropertyMap<Role>();

@@ -4,8 +4,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import rpg_npcs.ParseLog;
+import rpg_npcs.ParserFactorySet;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.script.ScriptFactoryPartData;
 import rpg_npcs.script.ScriptFactoryState;
 import rpg_npcs.script.node.command.ScriptCommandNode;
@@ -13,8 +17,12 @@ import rpg_npcs.script.node.command.ScriptCommandNode;
 public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 	private final Map<Pattern, Class<? extends ScriptCommandNode>> commandNodesMap = new HashMap<Pattern, Class<? extends ScriptCommandNode>>();
 	
-	public ScriptFactoryCommandPart() {
+	private final ParserFactorySet factorySet;
+	
+	public ScriptFactoryCommandPart(ParserFactorySet factorySet) {
 		super('[', ']');
+		
+		this.factorySet = factorySet;
 	}
 	
 	public void addCommandNodeGenerator(String regexString, Class<? extends ScriptCommandNode> newCommandNodeClass) {
@@ -27,33 +35,61 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 
 	@Override
 	protected ScriptFactoryPartData generateNode(ScriptFactoryState state, String instruction) {
-		String[] wordStrings = instruction.split(" ");
+		// Split instruction
+		Matcher instructionMatcher = Pattern.compile("\\G((?<prerequisites>([^:;]+):([^:;]+)(;([^:;]+):([^:;]+))*)\\?)?(?<command>[a-zA-Z]+)( (?<arguments>.+))?$").matcher(instruction);
 		
-		if (wordStrings.length == 0) {
-			return ScriptFactoryPartData.fromError("No command keyword given");
+		if (!instructionMatcher.matches()) {
+			return ScriptFactoryPartData.fromError("Malformed command: " + instruction);
 		}
 		
-		String keyWordString = wordStrings[0].toLowerCase();
-		String argumentString = instruction.substring(wordStrings[0].length()).trim();
+		String prerequisitesString = instructionMatcher.group("prerequisites");
+
+		// Extract any prerequisites
+		PrerequisiteSet prerequisiteSet = new PrerequisiteSet();
+		if (prerequisitesString != null) {
+			String[] prerequisites = prerequisitesString.split(";");
+			
+			Map<String, String> prerequisiteDataMap = new HashMap<String, String>();
+			
+			for (String string : prerequisites) {
+				String[] prerequisitePartStrings = string.split(":");
+				
+				String prerequisiteKeyString = prerequisitePartStrings[0];
+				String prerequisiteValueString = string.substring(prerequisiteKeyString.length() + 1);
+				
+				prerequisiteDataMap.put(prerequisiteKeyString, prerequisiteValueString);
+			}
+			
+			ParseLog log = new ParseLog();
+			prerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisiteDataMap);
+			
+			if (prerequisiteSet == null) {
+				return ScriptFactoryPartData.fromError(log.getErrors().getFormattedString());
+			}
+		}
+		
+		// Extract command & argument
+		String commandString = instructionMatcher.group("command");
+		String argumentString = instructionMatcher.group("arguments");
 		
 		for (Pattern regex : commandNodesMap.keySet()) {
-			if (regex.matcher(keyWordString).matches()) {
+			if (regex.matcher(commandString).matches()) {
 				// Get the class to instantiate
 				Class<? extends ScriptCommandNode> commandClass = commandNodesMap.get(regex);
 				
 				// Generate a new node with the arguments string
 				try {
-					Constructor<? extends ScriptCommandNode> constructor = commandClass.getDeclaredConstructor(String.class);
-					ScriptCommandNode node = constructor.newInstance(argumentString);
+					Constructor<? extends ScriptCommandNode> constructor = commandClass.getDeclaredConstructor(String.class, PrerequisiteSet.class);
+					ScriptCommandNode node = constructor.newInstance(argumentString, prerequisiteSet);
 					return ScriptFactoryPartData.fromNode(node);
 				} catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
 					e.printStackTrace();
-					return ScriptFactoryPartData.fromError("Malformed constructor for command class for: " + keyWordString);
+					return ScriptFactoryPartData.fromError("Malformed constructor for command class for: " + commandString);
 				}
 			}
 		}
 		
-		return ScriptFactoryPartData.fromError("Invalid command: " + keyWordString);
+		return ScriptFactoryPartData.fromError("Invalid command: " + commandString);
 	}
 
 }

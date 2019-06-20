@@ -1,5 +1,7 @@
 package rpg_npcs.prerequisite;
 
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,5 +93,25 @@ public class PrerequisiteFactory {
 		}
 		
 		return returnData;
+	}
+
+	public PrerequisiteSet createPrerequisiteSet(ParseLog log, Map<String, String> prerequisiteDataMap) {
+		PrerequisiteSet prerequisites = new PrerequisiteSet();
+		
+		// Create prerequisites
+		log.addInfo(" - prerequisites:");
+		for (Entry<String, String> entry : prerequisiteDataMap.entrySet()) {
+			// Convert to prerequisite
+			PrerequisiteFactoryReturnData returnPrerequisiteData = createPrerequisite(entry.getKey(), entry.getValue());
+			
+			if (returnPrerequisiteData.prerequisite != null) {
+				prerequisites.add(returnPrerequisiteData.prerequisite);
+			}
+			
+			log.addInfo("   - " + entry.getKey() + ": " + entry.getValue());
+			log.add(returnPrerequisiteData.log);
+		}
+		
+		return prerequisites;
 	}
 }

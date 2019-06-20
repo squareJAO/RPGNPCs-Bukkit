@@ -1,9 +1,7 @@
 package rpg_npcs.trigger;
 
-import java.util.Collection;
-
 import rpg_npcs.ParseLog;
-import rpg_npcs.prerequisite.Prerequisite;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 
 public class TriggerFactory {
 	public static class TriggerFactoryReturnData {
@@ -11,7 +9,7 @@ public class TriggerFactory {
 		public Trigger trigger = null;
 	}
 	
-	public TriggerFactoryReturnData createTrigger(String type, String name, Collection<Prerequisite> prerequisites, int priority) {
+	public TriggerFactoryReturnData createTrigger(String type, String name, PrerequisiteSet prerequisites, int priority) {
 		TriggerFactoryReturnData returnData = new TriggerFactoryReturnData();
 
 		switch (type.toLowerCase()) {

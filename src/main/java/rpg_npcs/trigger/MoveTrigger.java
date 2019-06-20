@@ -1,15 +1,13 @@
 package rpg_npcs.trigger;
 
-import java.util.Collection;
-
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-import rpg_npcs.prerequisite.Prerequisite;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 
 public class MoveTrigger extends Trigger {
 
-	public MoveTrigger(String nameString, Collection<Prerequisite> prerequisites, int priority) {
+	public MoveTrigger(String nameString, PrerequisiteSet prerequisites, int priority) {
 		super(nameString, prerequisites, priority);
 	}
 	

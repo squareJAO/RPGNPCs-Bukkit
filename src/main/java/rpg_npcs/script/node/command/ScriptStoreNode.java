@@ -5,13 +5,14 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 
 import rpg_npcs.Conversation;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.state.State;
 import rpg_npcs.state.StateType;
 
 public class ScriptStoreNode extends ScriptCommandNode {
-	public ScriptStoreNode(String argumentString) {
-		super(argumentString);
+	public ScriptStoreNode(String argumentString, PrerequisiteSet prerequisiteSet) {
+		super(argumentString, prerequisiteSet);
 	}
 
 	@Override

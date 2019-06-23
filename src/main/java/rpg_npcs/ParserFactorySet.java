@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 
@@ -15,6 +16,7 @@ import rpg_npcs.state.StateScope;
 import rpg_npcs.state.SupportedStateScopeRecords;
 import rpg_npcs.state.StateType;
 import rpg_npcs.state.SupportedStateTypeRecords;
+import rpg_npcs.trigger.Trigger;
 import rpg_npcs.trigger.TriggerFactory;
 
 public class ParserFactorySet {
@@ -78,6 +80,10 @@ public class ParserFactorySet {
 	
 	public final void addSupportedStateScope(StateScope scope) {
 		supportedStateScopeRecords.addSupportedType(scope);
+	}
+
+	public void addSupportedTrigger(String string, Class<? extends Trigger> triggerClass) {
+		triggerFactory.addTriggerClass(Pattern.compile(string), triggerClass);
 	}
 	
 	public final ScriptFactory getScriptFactory() {

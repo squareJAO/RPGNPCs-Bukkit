@@ -38,6 +38,9 @@ import rpg_npcs.state.NumberStateType;
 import rpg_npcs.state.StateNpcScope;
 import rpg_npcs.state.StatePlayerScope;
 import rpg_npcs.state.StateWorldScope;
+import rpg_npcs.trigger.BreakBlockTrigger;
+import rpg_npcs.trigger.MoveTrigger;
+import rpg_npcs.trigger.RightClickTrigger;
 
 public class RPGNPCsPlugin extends JavaPlugin {
 	public static MySQL sql;
@@ -116,6 +119,11 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		factorySet.addSupportedStateScope(new StateNpcScope());
 		factorySet.addSupportedStateScope(new StatePlayerScope());
 		factorySet.addSupportedStateScope(new StateWorldScope());
+		
+		// Triggers
+		factorySet.addSupportedTrigger("(player)?move", MoveTrigger.class);
+		factorySet.addSupportedTrigger("(player)?rightclick", RightClickTrigger.class);
+		factorySet.addSupportedTrigger("(player)?break(block)?", BreakBlockTrigger.class);
 	}
 
 	private void createSQL() {

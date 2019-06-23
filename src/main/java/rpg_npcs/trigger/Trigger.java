@@ -1,5 +1,6 @@
 package rpg_npcs.trigger;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -50,7 +51,19 @@ public abstract class Trigger implements RoleNamedProperty, Listener {
 		return prerequisites;
 	}
 	
-	protected void trigger(Player player) {
+	public Set<RpgNpc> getNpcs() {
+		return npcScripts.keySet();
+	}
+	
+	protected void triggerAll(Player player) {
+		trigger(player, getNpcs());
+	}
+	
+	protected void trigger(Player player, RpgNpc npc) {
+		trigger(player, Arrays.asList(new RpgNpc[]{npc}));
+	}
+	
+	protected void trigger(Player player, Iterable<RpgNpc> npcs) {
 		// Check if player is locked out
 		if (lockedPlayers.contains(player)) {
 			return;
@@ -62,7 +75,7 @@ public abstract class Trigger implements RoleNamedProperty, Listener {
 			@Override
 			public void run() {
 				try {
-					for (RpgNpc npc : npcScripts.keySet()) {
+					for (RpgNpc npc : npcs) {
 						if (npc.isSpawned() && npc.getEntity().getWorld() == player.getWorld()
 							&& priority > npc.getConversationPriority() && prerequisites.areMet(player, npc)) {
 							// Return to being synchronous

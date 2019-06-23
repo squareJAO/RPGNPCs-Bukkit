@@ -18,6 +18,6 @@ public class MoveTrigger extends Trigger {
 			return;
 		}
 		
-		trigger(event.getPlayer());
+		triggerAll(event.getPlayer());
 	}
 }

@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 public class RightClickTrigger extends Trigger {
 
-	public RightClickTrigger(String nameString, PrerequisiteSet prerequisites, int priority) {
+	public RightClickTrigger(String nameString, PrerequisiteSet prerequisites, Integer priority) {
 		super(nameString, prerequisites, priority);
 	}
 

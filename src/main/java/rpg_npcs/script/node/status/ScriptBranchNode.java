@@ -27,10 +27,4 @@ public class ScriptBranchNode extends ScriptLinearNode {
 	public void stopNode(Conversation conversation) {
 		// Stub
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return "<Jump to different node>";
-	}
-
 }

@@ -59,10 +59,4 @@ public class ScriptStoreNode extends ScriptCommandNode {
 		
 		resultState.setValue(conversation.getNpc(), conversation.getPlayer(), result);
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return "<Store the result of a function in a variable>";
-	}
-
 }

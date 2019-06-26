@@ -1,7 +1,10 @@
 package rpg_npcs.script;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+
+import org.bukkit.ChatColor;
 
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
@@ -16,11 +19,15 @@ public class ScriptFactory {
 	private final String defaultLineStartString;
 	private final Collection<ScriptFactoryPart> factoryParts;
 	
-	public ScriptFactory(Collection<ScriptFactoryPart> factoryParts, double defaultSpeed, int charactersPerWrap, String defaultLineStartString) {
+	public ScriptFactory(double defaultSpeed, int charactersPerWrap, String defaultLineStartString) {
 		this.defaultSpeed = defaultSpeed;
 		this.charactersPerWrap = charactersPerWrap;
 		this.defaultLineStartString = defaultLineStartString;
-		this.factoryParts = factoryParts;
+		this.factoryParts = new HashSet<ScriptFactoryPart>();
+	}
+	
+	public void addPart(ScriptFactoryPart part) {
+		factoryParts.add(part);
 	}
 	
 	public ScriptFactoryState createConversationTree(Map<String, String> instructions, RolePropertyMap<Script> parentScriptsMap) {
@@ -50,7 +57,7 @@ public class ScriptFactory {
 		
 		// Populate script stubs
 		for (String lineID : instructions.keySet()) {
-			String spokenTextString = instructions.get(lineID);
+			String spokenTextString = ChatColor.translateAlternateColorCodes('&', instructions.get(lineID));
 			Script baseNode = state.getScript(lineID);
 			PopulateBranch(baseNode, spokenTextString, state);
 			

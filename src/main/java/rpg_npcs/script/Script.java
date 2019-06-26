@@ -25,9 +25,4 @@ public class Script extends ScriptLinearNode implements RoleNamedProperty {
 	public void stopNode(Conversation conversation) {
 		// Stub
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return nameString + ": ";
-	}
 }

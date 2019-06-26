@@ -20,10 +20,4 @@ public class ScriptClearNode extends ScriptLinearNode {
 	public void stopNode(Conversation conversation) {
 		// Don't need to do anything here, running this node is a one time event so there's nothing to stop
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return "<clear>";
-	}
-
 }

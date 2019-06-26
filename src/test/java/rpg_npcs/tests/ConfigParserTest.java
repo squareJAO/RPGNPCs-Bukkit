@@ -19,6 +19,7 @@ import org.junit.Test;
 import rpg_npcs.DialogueMapping;
 import rpg_npcs.ParserFactorySet;
 import rpg_npcs.WeightedSet;
+import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.ConfigParser.ConfigResult;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
@@ -26,12 +27,24 @@ import rpg_npcs.script.Script;
 import rpg_npcs.trigger.Trigger;
 
 public class ConfigParserTest {
+	public static class TestTrigger extends Trigger {
+		public TestTrigger(String nameString, PrerequisiteSet prerequisites, Integer priority) {
+			super(nameString, prerequisites, priority);
+		}
+	}
+	
+	private ParserFactorySet makeFactorySet() {
+		ParserFactorySet factorySet = new ParserFactorySet();
+		factorySet.addSupportedTrigger("testtrigger1", TestTrigger.class);
+		
+		return factorySet;
+	}
 
 	@Test
 	public void emptyConfigBaseRoleTest() {
 		Configuration testConfigurationSection = new MemoryConfiguration();
 		
-		ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
+		ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 		
 		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
 		assertEquals(1, result.rolesMap.size());
@@ -80,7 +93,7 @@ public class ConfigParserTest {
 			}
 			
 			// Generate result
-			ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
+			ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 			
 			// Test
 			assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
@@ -126,29 +139,29 @@ public class ConfigParserTest {
 			triggerNameSet.add(tiggerNameString);
 		}
 		
-		triggerConfigurationSections[0].set("type", "playermove");
+		triggerConfigurationSections[0].set("type", "testTrigger1");
 		
-		triggerConfigurationSections[1].set("type", "playermove");
+		triggerConfigurationSections[1].set("type", "testTrigger1");
 		triggerConfigurationSections[1].createSection("prerequisites");
 
-		triggerConfigurationSections[2].set("type", "playermove");
+		triggerConfigurationSections[2].set("type", "testTrigger1");
 		ConfigurationSection trigger3PrerequisitesSection = triggerConfigurationSections[2].createSection("prerequisites");
 		trigger3PrerequisitesSection.set("range", 5);
 		
-		triggerConfigurationSections[3].set("type", "playermove");
+		triggerConfigurationSections[3].set("type", "testTrigger1");
 		triggerConfigurationSections[3].set("priority", 4);
 		
-		triggerConfigurationSections[4].set("type", "playermove");
+		triggerConfigurationSections[4].set("type", "testTrigger1");
 		triggerConfigurationSections[4].set("priority", 5);
 		triggerConfigurationSections[4].createSection("prerequisites");
 
-		triggerConfigurationSections[5].set("type", "playermove");
+		triggerConfigurationSections[5].set("type", "testTrigger1");
 		triggerConfigurationSections[5].set("priority", 6);
 		ConfigurationSection trigger6PrerequisitesSection = triggerConfigurationSections[5].createSection("prerequisites");
 		trigger6PrerequisitesSection.set("range", 5);
 		
 		// Generate result
-		ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
+		ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 		
 		// Test
 		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
@@ -192,7 +205,7 @@ public class ConfigParserTest {
 		for (int i = 0; i < roleDialoguesTriggerCount; i++) {
 			triggerNameStrings[i] = "trigger" + (i + 1);
 			ConfigurationSection triggerConfigurationSection = triggersConfigurationSection.createSection(triggerNameStrings[i]);
-			triggerConfigurationSection.set("type", "playermove");
+			triggerConfigurationSection.set("type", "testTrigger1");
 		}
 		
 		ConfigurationSection roleScriptsSection = testConfigurationSection.createSection("scripts");
@@ -244,7 +257,7 @@ public class ConfigParserTest {
 		roleDialoguesSection.set("trigger6", Arrays.asList(trigger6Objects));
 		
 		// Generate result
-		roleDialoguesResult = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
+		roleDialoguesResult = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 		
 		// Extract data
 		roleDialoguesBaseRole = roleDialoguesResult.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
@@ -348,12 +361,12 @@ public class ConfigParserTest {
 		 * 
 		 * base:
 		 * script1: ""
-		 * trigger1: playermove
+		 * trigger1: testTrigger1
 		 * trigger1 -> script1
 		 * 
 		 * a:
 		 * script2: ""
-		 * trigger2: playermove
+		 * trigger2: testTrigger1
 		 * trigger2 -> script1 (2)
 		 * 
 		 * b:
@@ -367,7 +380,7 @@ public class ConfigParserTest {
 		 * trigger2 -> a.script2 (5)
 		 * 
 		 * e:
-		 * trigger2: playermove
+		 * trigger2: testTrigger1
 		 * 
 		 * Sub Tests:
 		 * 1. script overriding
@@ -389,7 +402,7 @@ public class ConfigParserTest {
 		baseScriptsConfigurationSection.set("script1", "");
 
 		ConfigurationSection trigger1ConfigurationSection = baseTriggersConfigurationSection.createSection("trigger1");
-		trigger1ConfigurationSection.set("type", "playermove");
+		trigger1ConfigurationSection.set("type", "testTrigger1");
 		
 		baseDialoguesConfigurationSection.set("trigger1", "script1");
 		
@@ -402,7 +415,7 @@ public class ConfigParserTest {
 		// A
 		ConfigurationSection triggersConfigurationSectionA = roleConfigurationSectionA.createSection("triggers");
 		ConfigurationSection trigger2ConfigurationSection = triggersConfigurationSectionA.createSection("trigger2");
-		trigger2ConfigurationSection.set("type", "playermove");
+		trigger2ConfigurationSection.set("type", "testTrigger1");
 		
 		ConfigurationSection scriptsConfigurationSectionA = roleConfigurationSectionA.createSection("scripts");
 		scriptsConfigurationSectionA.set("script2", "");
@@ -434,11 +447,11 @@ public class ConfigParserTest {
 		
 		ConfigurationSection triggersConfigurationSectionE = roleConfigurationSectionE.createSection("triggers");
 		ConfigurationSection trigger2ConfigurationSection2 = triggersConfigurationSectionE.createSection("trigger2");
-		trigger2ConfigurationSection2.set("type", "playermove");
+		trigger2ConfigurationSection2.set("type", "testTrigger1");
 		
 		
 		// Generate result
-		ConfigResult result = (new ParserFactorySet()).getConfigParser().reloadConfig(testConfigurationSection);
+		ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 		
 		Role baseRole = result.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
 		Role roleA = result.rolesMap.get("a");

@@ -13,15 +13,6 @@ public abstract class ScriptLinearNode extends ScriptNode {
 		this.nextNode = nextNode;
 	}
 	
-	@Override
-	public String toString() {
-		if (nextNode != null) {
-			return this.getNodeRepresentation() + nextNode.toString();
-		}
-		
-		return this.getNodeRepresentation();
-	}
-	
 	protected void finished(Conversation conversation) {
 		super.finished(nextNode, conversation);
 	}

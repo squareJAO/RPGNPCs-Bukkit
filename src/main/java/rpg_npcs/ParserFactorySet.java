@@ -1,12 +1,6 @@
 package rpg_npcs;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
-
-import org.bukkit.Bukkit;
 
 import rpg_npcs.prerequisite.PrerequisiteFactory;
 import rpg_npcs.script.ScriptFactory;
@@ -27,7 +21,6 @@ public class ParserFactorySet {
 	private ConfigParser configParser;
 	
 	// Data for building above factories
-	private Map<String, ScriptFactoryPart> scriptParts;
 	private SupportedStateTypeRecords supportedStateTypeRecords;
 	private SupportedStateScopeRecords supportedStateScopeRecords;
 	private double defaultSpeed;
@@ -37,41 +30,21 @@ public class ParserFactorySet {
 	public ParserFactorySet() {
 		configParser = new ConfigParser(this);
 		
-		scriptParts = new HashMap<String, ScriptFactoryPart>();
 		defaultSpeed = 0.7;
 		charactersPerWrap = 15;
 		defaultLineStartString = "";
+		
 		supportedStateTypeRecords = new SupportedStateTypeRecords();
 		supportedStateScopeRecords = new SupportedStateScopeRecords();
-		
-		rebuild();
-	}
-	
-	/**
-	 * Rebuilds all of the factories with the data contained in this. This should be called after values have been changed
-	 */
-	public final void rebuild() {
-		Collection<ScriptFactoryPart> scriptFactoryParts = scriptParts.values();
-		scriptFactory = new ScriptFactory(scriptFactoryParts, defaultSpeed, charactersPerWrap, defaultLineStartString);
-		
 		stateFactory = new StateFactory(supportedStateTypeRecords, supportedStateScopeRecords);
+		scriptFactory = new ScriptFactory(defaultSpeed, charactersPerWrap, defaultLineStartString);
 		
 		triggerFactory = new TriggerFactory();
-		
 		prerequisiteFactory = new PrerequisiteFactory(this);
 	}
 	
-	public final void addScriptFactoryPart(String name, ScriptFactoryPart part) {
-		if (scriptParts.containsKey(name)) {
-			Bukkit.getLogger().log(Level.SEVERE, "Factory part name '" + name + "' is already taken!");
-			return;
-		}
-		
-		scriptParts.put(name, part);
-	}
-	
-	public final ScriptFactoryPart getScriptFactoryPart(String name) {
-		return scriptParts.get(name);
+	public final void addScriptFactoryPart(ScriptFactoryPart part) {
+		scriptFactory.addPart(part);
 	}
 	
 	public final void addSupportedStateType(StateType<?> stateType) {

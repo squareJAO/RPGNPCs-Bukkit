@@ -9,7 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
 public class BreakBlockTrigger extends Trigger {
-	public BreakBlockTrigger(String nameString, PrerequisiteSet prerequisites, int priority) {
+	public BreakBlockTrigger(String nameString, PrerequisiteSet prerequisites, Integer priority) {
 		super(nameString, prerequisites, priority);
 	}
 	

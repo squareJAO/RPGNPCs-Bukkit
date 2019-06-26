@@ -124,6 +124,9 @@ public class Conversation {
 		
 		if (currentNode == null) {
 			isRunning = false;
+			
+			// Clear the chat once finished
+			getSpeechBubble().clearText();
 		}
 		
 		this.currentNode = currentNode;

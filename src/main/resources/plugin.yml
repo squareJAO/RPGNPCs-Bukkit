@@ -3,7 +3,7 @@ main: rpg_npcs.RPGNPCsPlugin
 version: 0.0.1
 api-version: 1.13
 depend: [Citizens, HolographicDisplays]
-softdepend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI, Shop]
 commands:
    calculate:
       description: Resolves a given expression to a value

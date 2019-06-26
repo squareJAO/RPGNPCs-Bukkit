@@ -159,9 +159,4 @@ public class ScriptTextNode extends ScriptLinearNode {
 			addTextTasks.remove(conversation);
 		}
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return "<say '" + templateTextString.replace("\n", "\\n").replace("\t", "\\t") + "' with a speed of " + textSpeed + ">";
-	}
 }

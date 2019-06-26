@@ -46,9 +46,4 @@ public class ScriptQuestionNode extends ScriptNode {
 		// Stub
 	}
 
-	@Override
-	protected String getNodeRepresentation() {
-		return "<Ask question>";
-	}
-
 }

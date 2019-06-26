@@ -35,11 +35,4 @@ public abstract class ScriptNode {
 	
 	// Stops everything that this node is in the process of doing
 	public abstract void stopNode(Conversation conversation);
-	
-	@Override
-	public String toString() {
-		return this.getNodeRepresentation();
-	}
-	
-	protected abstract String getNodeRepresentation();
 }

@@ -23,11 +23,6 @@ public class ScriptCrouchNode extends ScriptCommandNode {
 			((Player) npcEntity).setSneaking(shouldCrouch(argumentString));
 		}
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return "<crouch>";
-	}
 	
 	private boolean shouldCrouch(String argumentString) {
 		if (argumentString == null || argumentString.length() == 0) {

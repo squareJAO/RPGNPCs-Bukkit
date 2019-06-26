@@ -50,8 +50,8 @@ charactersPerLine: 20
 
 # The string that should be placed at the start of every new line. This is usually a
 # colour code but can be any text
-# Default value: §7
-lineStartString: §7
+# Default value: "&7"
+lineStartString: "&7"
 
 # The global triggers, visible from any role
 triggers:
@@ -59,6 +59,8 @@ triggers:
     type: playermove
     prerequisites:
       range: 5
+  rightClick:
+    type: rightclick
       
 # The set of roles
 roles:

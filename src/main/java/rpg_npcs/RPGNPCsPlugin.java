@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.parser.ParserException;
@@ -28,8 +29,12 @@ import rpg_npcs.script.factoryPart.ScriptFactoryPausePart;
 import rpg_npcs.script.factoryPart.ScriptFactoryQuestionPart;
 import rpg_npcs.script.factoryPart.ScriptFactorySpeedPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryStatusPart;
+import rpg_npcs.script.node.command.ScriptCommandNode;
 import rpg_npcs.script.node.command.ScriptCrouchNode;
+import rpg_npcs.script.node.command.ScriptExecuteCommandNode;
+import rpg_npcs.script.node.command.ScriptForceLookCommandNode;
 import rpg_npcs.script.node.command.ScriptLookCloseNode;
+import rpg_npcs.script.node.command.ScriptOpenShopCommandNode;
 import rpg_npcs.script.node.command.ScriptStoreNode;
 import rpg_npcs.sql.MyPostgreSQL;
 import rpg_npcs.sql.MySQL;
@@ -54,6 +59,9 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	public boolean verboseLogging = true;
 	public int defaultConversationMaxRange = 5;
 	public int ticksPerRangeCheck = 15;
+	
+	// Accessible script parts
+	private ScriptFactoryCommandPart scriptFactoryCommandPart;
 	
 	@Override
 	public void onEnable(){
@@ -85,6 +93,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		
 		// Create default factory set
 		factorySet = new ParserFactorySet();
+		scriptFactoryCommandPart = new ScriptFactoryCommandPart(factorySet);
 		addDefaultFactoryData();
 		
 		// Load all conversations
@@ -100,17 +109,19 @@ public class RPGNPCsPlugin extends JavaPlugin {
 	
 	private void addDefaultFactoryData() {
 		// Command factory part
-		ScriptFactoryCommandPart scriptFactoryCommandPart = new ScriptFactoryCommandPart(factorySet);
-		scriptFactoryCommandPart.addCommandNodeGenerator("crouch", ScriptCrouchNode.class);
-		scriptFactoryCommandPart.addCommandNodeGenerator("look(?:close)?", ScriptLookCloseNode.class);
-		scriptFactoryCommandPart.addCommandNodeGenerator("(?:store|set)(?:in)?", ScriptStoreNode.class);
+		addCommandNodeGenerator("crouch", ScriptCrouchNode.class);
+		addCommandNodeGenerator("look(?:close)?", ScriptLookCloseNode.class);
+		addCommandNodeGenerator("(?:force)?goggle", ScriptForceLookCommandNode.class);
+		addCommandNodeGenerator("(?:store|set)(?:in)?", ScriptStoreNode.class);
+		addCommandNodeGenerator("run|execute", ScriptExecuteCommandNode.class);
+		addCommandNodeGenerator("(?:open)?shop", ScriptOpenShopCommandNode.class);
 		
 		// Add all factory parts
-		factorySet.addScriptFactoryPart("pause", new ScriptFactoryPausePart());
-		factorySet.addScriptFactoryPart("speed", new ScriptFactorySpeedPart());
-		factorySet.addScriptFactoryPart("command", scriptFactoryCommandPart);
-		factorySet.addScriptFactoryPart("question", new ScriptFactoryQuestionPart());
-		factorySet.addScriptFactoryPart("status", new ScriptFactoryStatusPart(factorySet));
+		factorySet.addScriptFactoryPart(new ScriptFactoryPausePart());
+		factorySet.addScriptFactoryPart(new ScriptFactorySpeedPart());
+		factorySet.addScriptFactoryPart(scriptFactoryCommandPart);
+		factorySet.addScriptFactoryPart(new ScriptFactoryQuestionPart());
+		factorySet.addScriptFactoryPart(new ScriptFactoryStatusPart(factorySet));
 		
 		// Supported types
 		factorySet.addSupportedStateType(new NumberStateType());
@@ -121,11 +132,15 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		factorySet.addSupportedStateScope(new StateWorldScope());
 		
 		// Triggers
-		factorySet.addSupportedTrigger("(player)?move", MoveTrigger.class);
-		factorySet.addSupportedTrigger("(player)?rightclick", RightClickTrigger.class);
-		factorySet.addSupportedTrigger("(player)?break(block)?", BreakBlockTrigger.class);
+		factorySet.addSupportedTrigger("(?:player)?move", MoveTrigger.class);
+		factorySet.addSupportedTrigger("(?:player)?rightclick", RightClickTrigger.class);
+		factorySet.addSupportedTrigger("(?:player)?break(?:block)?", BreakBlockTrigger.class);
 	}
-
+	
+	public void addCommandNodeGenerator(String pattern, Class<? extends ScriptCommandNode> commandClass) {
+		scriptFactoryCommandPart.addCommandNodeGenerator(pattern, commandClass);
+	}
+	
 	private void createSQL() {
 		boolean isSQLite = getConfig().getBoolean("useSQLite");
 		
@@ -175,10 +190,6 @@ public class RPGNPCsPlugin extends JavaPlugin {
 			getLogger().info(string);
 		}
 	}
-	
-	public static boolean hasPlaceholderAPI() {
-		return Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
-	}
 
 	public ParseLog reload() {
 		// Unregister old trigger listeners
@@ -202,11 +213,8 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		defaultConversationMaxRange = getConfig().getInt("defaultConversationMaxRange");
 		ticksPerRangeCheck = getConfig().getInt("ticksPerRangeCheck");
 		factorySet.setCharactersPerWrap(getConfig().getInt("charactersPerLine"));
-		factorySet.setDefaultLineStartString(getConfig().getString("lineStartString"));
+		factorySet.setDefaultLineStartString(ChatColor.translateAlternateColorCodes('&', getConfig().getString("lineStartString")));
 		factorySet.setDefaultSpeed(getConfig().getDouble("defaultTextSpeed"));
-		
-		// Rebuild
-		factorySet.rebuild();
 		
 		// Set new data
 		ConfigParser.ConfigResult result = factorySet.getConfigParser().reloadConfig(getConfig());
@@ -256,6 +264,14 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 		
 		return null;
+	}
+	
+	public static boolean hasPlaceholderAPI() {
+		return Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
+	}
+	
+	public static boolean hasShop() {
+		return Bukkit.getPluginManager().getPlugin("Shop") != null;
 	}
 	
 	public static RPGNPCsPlugin getPlugin() {

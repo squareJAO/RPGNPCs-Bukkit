@@ -7,7 +7,7 @@ import rpg_npcs.prerequisite.PrerequisiteSet;
 
 public class MoveTrigger extends Trigger {
 
-	public MoveTrigger(String nameString, PrerequisiteSet prerequisites, int priority) {
+	public MoveTrigger(String nameString, PrerequisiteSet prerequisites, Integer priority) {
 		super(nameString, prerequisites, priority);
 	}
 	

@@ -44,10 +44,4 @@ public class ScriptPauseNode  extends ScriptLinearNode {
 			_pauseTasks.remove(conversation);
 		}
 	}
-
-	@Override
-	protected String getNodeRepresentation() {
-		return "<pause of " + _delay + " ticks>";
-	}
-
 }

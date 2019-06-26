@@ -19,11 +19,6 @@ public class ScriptLookCloseNode extends ScriptCommandNode {
 		conversation.getNpc().lookClose(enable);
 	}
 
-	@Override
-	protected String getNodeRepresentation() {
-		return "<Look Close>";
-	}
-
 	private boolean shouldEnable(String argumentString) {
 		if (argumentString == null || argumentString.length() == 0) {
 			return true;

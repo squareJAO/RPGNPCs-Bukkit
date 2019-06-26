@@ -28,7 +28,7 @@ public abstract class Trigger implements RoleNamedProperty, Listener {
 	// should not be triggered again
 	private final Set<Player> lockedPlayers = new HashSet<Player>();
 	
-	public Trigger(String nameString, PrerequisiteSet prerequisites, int priority) {
+	public Trigger(String nameString, PrerequisiteSet prerequisites, Integer priority) {
 		this.nameString = nameString;
 		this.npcScripts = new HashMap<RpgNpc, WeightedSet<Script>>();
 		this.prerequisites = prerequisites;

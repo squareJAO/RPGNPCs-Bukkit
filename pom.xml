@@ -3,7 +3,7 @@
   <groupId>com.squareJAO</groupId>
   <artifactId>RpgNpcs</artifactId>
   
-  <version>0.2.2-beta-1</version>
+  <version>0.2.3-beta-1</version>
   <name>RpgNpcs</name>
   
   <properties>
@@ -72,6 +72,11 @@
 	  <groupId>com.mchange</groupId>
 	  <artifactId>c3p0</artifactId>
 	  <version>0.9.5.4</version>
+	</dependency>
+	<dependency>
+	  <groupId>conj</groupId>
+	  <artifactId>Shop</artifactId>
+	  <version>1.0.0</version>
 	</dependency>
   </dependencies>
   

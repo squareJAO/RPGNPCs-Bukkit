@@ -12,11 +12,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.yaml.snakeyaml.parser.ParserException;
 
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
@@ -197,24 +201,22 @@ public class RPGNPCsPlugin extends JavaPlugin {
 			role.unregisterTriggerListeners(this);
 		}
 		
-		// Reload
-		try {
-			reloadConfig();
-		} catch (ParserException e) {
-			ParseLog errorLog = new ParseLog();
-			errorLog.addError("Parser exception:");
-			errorLog.addError(e.getMessage());
-			errorLog.addError(e.getProblem());
-			return errorLog;
-		}
+		// Reload base config
+		reloadConfig();
+		FileConfiguration config = getConfig();
+		
+		// Load folders
+		addFolderSection(config, "triggers");
+		addFolderSection(config, "states");
+		addFolderSection(config, "roles");
 		
 		// Load metavalues
-		verboseLogging = getConfig().getBoolean("verboseLogging");
-		defaultConversationMaxRange = getConfig().getInt("defaultConversationMaxRange");
-		ticksPerRangeCheck = getConfig().getInt("ticksPerRangeCheck");
-		factorySet.setCharactersPerWrap(getConfig().getInt("charactersPerLine"));
-		factorySet.setDefaultLineStartString(ChatColor.translateAlternateColorCodes('&', getConfig().getString("lineStartString")));
-		factorySet.setDefaultSpeed(getConfig().getDouble("defaultTextSpeed"));
+		verboseLogging = config.getBoolean("verboseLogging");
+		defaultConversationMaxRange = config.getInt("defaultConversationMaxRange");
+		ticksPerRangeCheck = config.getInt("ticksPerRangeCheck");
+		factorySet.setCharactersPerWrap(config.getInt("charactersPerLine"));
+		factorySet.setDefaultLineStartString(ChatColor.translateAlternateColorCodes('&', config.getString("lineStartString")));
+		factorySet.setDefaultSpeed(config.getDouble("defaultTextSpeed"));
 		
 		// Set new data
 		ConfigParser.ConfigResult result = factorySet.getConfigParser().reloadConfig(getConfig());
@@ -231,6 +233,36 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 		
 		return result.log;
+	}
+	
+	private void addFolderSection(Configuration config, String groupNameString) {
+		ConfigurationSection groupConfigSection = config.getConfigurationSection(groupNameString);
+		if (groupConfigSection == null) {
+			groupConfigSection = config.createSection(groupNameString);
+		}
+		File folder = new File(getDataFolder(), groupNameString);
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+		File[] files = folder.listFiles();
+		for (File file : files) {
+			Configuration fileConfiguration = YamlConfiguration.loadConfiguration(file);
+			String itemNameString = FilenameUtils.getBaseName(file.getName());
+			
+			ConfigurationSection itemConfigSection;
+			if (groupConfigSection.isConfigurationSection(itemNameString)) {
+				itemConfigSection = groupConfigSection.getConfigurationSection(itemNameString);
+			} else {
+				itemConfigSection = groupConfigSection.createSection(itemNameString);
+			}
+
+			// Move role data into place
+			for (String key : fileConfiguration.getKeys(true)) {
+				if (!fileConfiguration.isConfigurationSection(key)) {
+					itemConfigSection.set(key, fileConfiguration.get(key));
+				}
+			}
+		}
 	}
 	
 	public void registerRPGNPC(RpgNpc npc) {

@@ -3,8 +3,9 @@ package rpg_npcs.script.factoryPart;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import rpg_npcs.ParseLog;
 import rpg_npcs.ParserFactorySet;
+import rpg_npcs.logging.Log;
+import rpg_npcs.logging.Logged;
 import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.script.Script;
 import rpg_npcs.script.ScriptFactoryPartData;
@@ -28,6 +29,7 @@ public class ScriptFactoryStatusPart extends ScriptFactoryPart {
 		
 		if (instruction == "") {
 			newNode = new ScriptClearNode();
+			return ScriptFactoryPartData.fromNode(newNode, 10);
 		} else {
 			Matcher instructionMatcher = Pattern.compile("\\G((?<prerequisites>([^:;]+):([^:;]+)(;([^:;]+):([^:;]+))*)\\?\\s*)?(?<branch>.+)$")
 					.matcher(instruction);
@@ -41,13 +43,14 @@ public class ScriptFactoryStatusPart extends ScriptFactoryPart {
 			
 			PrerequisiteSet prerequisiteSet = new PrerequisiteSet();
 			if (prerequisitesString != null) {
-				ParseLog log = new ParseLog();
-				
-				prerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisitesString);
-				
-				if (log.errorCount() > 0) {
+				Logged<PrerequisiteSet> loggedPrerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(prerequisitesString);
+
+				Log log = loggedPrerequisiteSet.getLog();
+				if (log.countErrors() > 0) {
 					return ScriptFactoryPartData.fromError(log.getErrors().getFormattedString());
 				}
+				
+				prerequisiteSet = loggedPrerequisiteSet.getResult();
 			}
 			
 			// Interpret as node to jump to

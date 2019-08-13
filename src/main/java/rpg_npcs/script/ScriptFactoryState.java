@@ -1,25 +1,21 @@
 package rpg_npcs.script;
 
-import rpg_npcs.ParseLog;
 import rpg_npcs.role.RolePropertyMap;
 
 public class ScriptFactoryState {
 	public double TextSpeed;
-	public boolean BranchDone;
+	private final double defaultTextSpeed;
+	private boolean containsText;
 	
 	private RolePropertyMap<Script> allScripts;
 	private RolePropertyMap<Script> newScripts;
 	
-	public ParseLog log;
-	
 	public ScriptFactoryState(double textSpeed, RolePropertyMap<Script> parentScripts) {
+		defaultTextSpeed = textSpeed;
 		TextSpeed = textSpeed;
 		
 		allScripts = parentScripts;
 		newScripts = new RolePropertyMap<Script>();
-		log = new ParseLog();
-		
-		ResetBranchData();
 	}
 	
 	public RolePropertyMap<Script> getNewScripts() {
@@ -38,13 +34,22 @@ public class ScriptFactoryState {
 	public Script getScript(String script) {
 		return allScripts.get(script);
 	}
-	
-	public void ResetBranchData() {
-		BranchDone = false;
-	}
 
 	public RolePropertyMap<Script> getAllScripts() {
 		return allScripts;
+	}
+
+	public boolean getContainsText() {
+		return containsText;
+	}
+
+	public void resetLine() {
+		TextSpeed = defaultTextSpeed;
+		containsText = false;
+	}
+
+	public void containsText() {
+		containsText = true;
 	}
 	
 }

@@ -1,12 +1,18 @@
 package rpg_npcs.prerequisite;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import me.clip.placeholderapi.PlaceholderAPI;
+import rpg_npcs.ParserFactorySet;
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
+import rpg_npcs.logging.Log;
+import rpg_npcs.logging.Logged;
 import rpg_npcs.state.State.ComparisonResult;
 import rpg_npcs.state.StateType;
 
@@ -37,7 +43,7 @@ public class StatePrerequisite implements Prerequisite {
 		// Resolve placeholders
 		String localLhsExpression = lhsExpression;
 		String localRhsExpression = rhsExpression;
-		if (RPGNPCsPlugin.hasPlaceholderAPI()) {
+		if (RPGNPCsPlugin.getPlaceholderAPI() != null) {
 			localLhsExpression = PlaceholderAPI.setPlaceholders(player, localLhsExpression);
 			localRhsExpression = PlaceholderAPI.setPlaceholders(player, localRhsExpression);
 		}
@@ -75,5 +81,61 @@ public class StatePrerequisite implements Prerequisite {
 		T lhs = supportedStateType.executeTypedExpression(npc, player, localLhsExpression);
 		T rhs = supportedStateType.executeTypedExpression(npc, player, localRhsExpression);
 		return supportedStateType.compare(lhs, rhs);
+	}
+	
+	public static Logged<Prerequisite> makePrerequisite(String value) {
+		Log log = new Log();
+		
+		String valueTypeString = value.split(" ")[0];
+		ParserFactorySet parserFactorySet = RPGNPCsPlugin.getPlugin().getParserFactorySet();
+		StateType<?> supportedStateType = parserFactorySet.getSupportedStateTypeRecords().get(valueTypeString);
+		
+		if (supportedStateType == null) {
+			log.addError("Unrecognised state type: '" + valueTypeString + "'");
+			return new Logged<Prerequisite>(null, log);
+		}
+		
+		// Get expression
+		String inequalityString = value.substring(valueTypeString.length() + 1);
+		Matcher inequalityMatcher = Pattern.compile("(.+)((?:<|>)=?|==|!=)(.+)").matcher(inequalityString);
+		
+		if (!inequalityMatcher.matches()) {
+			log.addError("Invalid inequality: '" + inequalityString + "'");
+			return new Logged<Prerequisite>(null, log);
+		}
+		
+		String lhsExpressionString = inequalityMatcher.group(1);
+		String inequalitySignString = inequalityMatcher.group(2);
+		String rhsExpressionString = inequalityMatcher.group(3);
+		
+		StatePrerequisite.Comparison comparison;
+		switch (inequalitySignString) {
+		case "<":
+			comparison = Comparison.LESS_THAN;
+			break;
+		case "<=":
+			comparison = Comparison.LESS_THAN_OR_EQUAL_TO;
+			break;
+		case "=":
+		case "==":
+			comparison = Comparison.EQUAL_TO;
+			break;
+		case ">":
+			comparison = Comparison.GREATER_THAN;
+			break;
+		case ">=":
+			comparison = Comparison.GREATER_THAN_OR_EQUAL_TO;
+			break;
+		case "!=":
+			comparison = Comparison.NOT_EQUAL_TO;
+			break;
+
+		default:
+			throw new NotImplementedException();
+		}
+		
+		Prerequisite prerequisite = new StatePrerequisite(comparison, supportedStateType, lhsExpressionString, rhsExpressionString);
+		
+		return new Logged<Prerequisite>(prerequisite, log);
 	}
 }

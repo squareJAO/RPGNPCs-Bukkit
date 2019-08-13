@@ -6,10 +6,13 @@ import java.util.Map;
 
 import org.bukkit.ChatColor;
 
+import rpg_npcs.logging.Log;
+import rpg_npcs.logging.Logged;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.ScriptFactoryPartData.HeldData;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
 import rpg_npcs.script.node.ScriptLinearNode;
+import rpg_npcs.script.node.ScriptPauseNode;
 import rpg_npcs.script.node.ScriptTextNode;
 import rpg_npcs.script.node.status.ScriptClearNode;
 
@@ -30,7 +33,7 @@ public class ScriptFactory {
 		factoryParts.add(part);
 	}
 	
-	public ScriptFactoryState createConversationTree(Map<String, String> instructions, RolePropertyMap<Script> parentScriptsMap) {
+	public Logged<RolePropertyMap<Script>> createConversationTree(Map<String, String> instructions, RolePropertyMap<Script> parentScriptsMap) {
 		/* These Instructions are outdated due to modular system but still give a good outline of the intended functionality of the system
 		 * 
 		 * Each item in the instructions is an id and a path. The first string is the id of that path
@@ -38,14 +41,16 @@ public class ScriptFactory {
 		 * A number surrounded by two ~ indicated a pause of ~x~ ticks
 		 * A number inside of curly braces {x} indicates that the current text speed should be updated to x characters a tick
 		 * Angled braces indicate a question and are used with the following format: <text1:x|text2:y|...|textn:z> where each x,y,z are ids of other paths
-		 * Any characters inside of square braces are control characters and should not be displayed:
-		 * 	1. [-] means clear the display
-		 * 	2. [execute <string>] means execute the string as a command
+		 * Any characters inside of square braces are control characters and should not be displayed
+		 * || means clear the display
+		 * [execute <string>] means execute the string as a command
 		 * Any deviations of this format should print an error but should parse the error containing text as spoken text.
 		 * Pauses should be automatically added in to punctuation
 		 * The default line start string should be prepended to all new lines
 		 * The lines of text should be broken up if they exceed the number of characters per wrap
 		 */
+		
+		Log log = new Log();
 		
 		// Initialise state
 		ScriptFactoryState state = new ScriptFactoryState(defaultSpeed, parentScriptsMap);
@@ -58,13 +63,13 @@ public class ScriptFactory {
 		// Populate script stubs
 		for (String lineID : instructions.keySet()) {
 			String spokenTextString = ChatColor.translateAlternateColorCodes('&', instructions.get(lineID));
+			spokenTextString = spokenTextString.trim();
 			Script baseNode = state.getScript(lineID);
-			PopulateBranch(baseNode, spokenTextString, state);
-			
-			state.ResetBranchData();
+			Log branchLog = PopulateBranch(baseNode, spokenTextString, state);
+			log.addNamedEntry(lineID, branchLog);
 		}
 		
-		return state;
+		return new Logged<RolePropertyMap<Script>>(state.getNewScripts(), log);
 	}
 	
 	private ScriptLinearNode AddSpeechNode(ScriptLinearNode workingNode, ScriptFactoryState state, String spokenTextString) {
@@ -73,15 +78,23 @@ public class ScriptFactory {
 			return workingNode;
 		}
 		
+		state.containsText();
+		
 		ScriptLinearNode nextNode = new ScriptTextNode(spokenTextString, state.TextSpeed, charactersPerWrap, defaultLineStartString);
 		workingNode.setNextNode(nextNode);
 		return nextNode;
 	}
 	
-	private void PopulateBranch(ScriptLinearNode baseNode, String instructionString, ScriptFactoryState state) {
+	private Log PopulateBranch(ScriptLinearNode baseNode, String instructionString, ScriptFactoryState state) {
+		Log log = new Log();
+		
+		state.resetLine();
+		
 		if (instructionString.length() == 0) {
-			return;
+			return log;
 		}
+		
+		log.addInfo(instructionString);
 		
 		ScriptLinearNode workingNode = baseNode;
 		
@@ -100,7 +113,8 @@ public class ScriptFactory {
 			startingIndex = 1;
 		}
 		
-		for (int characterIndex = startingIndex; characterIndex < instructionString.length(); characterIndex++) {
+		int characterIndex;
+		for (characterIndex = startingIndex; characterIndex < instructionString.length(); characterIndex++) {
 			char currentCharacter = instructionString.charAt(characterIndex);
 
 			
@@ -146,22 +160,34 @@ public class ScriptFactory {
 					
 					// Do what needs to be done with the returned data
 					if(data.heldData == HeldData.error) {
-						state.log.addError(data.errorText);
+						log.addError(data.errorText);
 					} else if(data.heldData == HeldData.node) {
+						// Add a pause if needed
+						int pauseBefore = data.pauseBefore;
+						if (pauseBefore > 0) {
+							ScriptPauseNode pauseNode = new ScriptPauseNode(pauseBefore);
+							workingNode.setNextNode(pauseNode);
+							workingNode = pauseNode;
+						}
+						
 						workingNode.setNextNode(data.node);
 						
 						// Check if done
-						if (!state.BranchDone && !(data.node instanceof ScriptLinearNode)) {
-							state.log.addError("Returned conversation node was non-linear but the branch has not been marked as done. Expect bugs.");
-						} else if (data.node instanceof ScriptLinearNode) {
-							workingNode = (ScriptLinearNode)data.node;
+						if (!(data.node instanceof ScriptLinearNode)) {
+							// Check if more given that wasn't used
+							if (characterIndex < instructionString.length() - 1) {
+								log.addError("Branch marked as done with a branching node, but there were more instructions: '" + instructionString.substring(characterIndex) + "'");
+							}
+							return log;
 						}
+						
+						workingNode = (ScriptLinearNode)data.node;
 					}
 
 					// Check if spaces need to be trimmed after
 					if(currentPart.shouldTrimSpacesAfter()) {
-						while (characterIndex + 1 < currentEatenString.length() &&
-								Character.isWhitespace(currentEatenString.charAt(characterIndex + 1))) {
+						while (characterIndex + 1 < instructionString.length() &&
+								Character.isWhitespace(instructionString.charAt(characterIndex + 1))) {
 							characterIndex++;
 						}
 					}
@@ -175,21 +201,20 @@ public class ScriptFactory {
 				}
 			}
 			
-			// Check if any parts have marked the branch as done
-			if (state.BranchDone) {
-				// Check if it is the end of the instructions
-				if (characterIndex != instructionString.length() - 1) {
-					state.log.addError("Branch marked as done with a branching node, but there were more instructions: '" + instructionString.substring(characterIndex) + "'");
-				}
-				
-				return;
-			}
-			
 			// Stop escaping if were escaping
 			escaping = false;
 		}
 		
 		// Add the remaining string as a text node
-		AddSpeechNode(workingNode, state, currentEatenString);
+		workingNode = AddSpeechNode(workingNode, state, currentEatenString);
+		
+		// Add a pause
+		if (!(workingNode instanceof ScriptPauseNode) && state.getContainsText()) {
+			ScriptPauseNode node = new ScriptPauseNode(100);
+			workingNode.setNextNode(node);
+			workingNode = node;
+		}
+		
+		return log;
 	}
 }

@@ -16,7 +16,7 @@ public class ScriptOpenShopCommandNode extends ScriptCommandNode {
 
 	@Override
 	protected void startThisCommand(Conversation conversation, String arguments) {
-		if (!RPGNPCsPlugin.hasShop()) {
+		if (RPGNPCsPlugin.getShop() == null) {
 			Bukkit.getLogger().warning("Shop plugin for open shop command not found");
 			return;
 		}

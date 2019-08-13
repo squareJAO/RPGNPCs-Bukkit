@@ -13,11 +13,6 @@ public class MoveTrigger extends Trigger {
 	
 	@EventHandler
 	public void playerMove(PlayerMoveEvent event) {
-		// Check wasn't just a head move
-		if (event.getFrom().distanceSquared(event.getTo()) < 0.00001) {
-			return;
-		}
-		
 		triggerAll(event.getPlayer());
 	}
 }

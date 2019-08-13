@@ -23,7 +23,7 @@ public abstract class ScriptCommandNode extends ScriptLinearNode {
 			String finalArguments = arguments;
 			
 			// Add papi if loaded
-			if (RPGNPCsPlugin.hasPlaceholderAPI()) {
+			if (RPGNPCsPlugin.getPlaceholderAPI() != null) {
 				finalArguments = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), finalArguments);
 			}
 			

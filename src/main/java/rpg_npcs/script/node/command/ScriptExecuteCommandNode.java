@@ -13,6 +13,6 @@ public class ScriptExecuteCommandNode extends ScriptCommandNode{
 
 	@Override
 	protected void startThisCommand(Conversation conversation, String arguments) {
-		Bukkit.getServer().dispatchCommand(conversation.getNpc().getEntity(), arguments);
+		Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), arguments);
 	}
 }

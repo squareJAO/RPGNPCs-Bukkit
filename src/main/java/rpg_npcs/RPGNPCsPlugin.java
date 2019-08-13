@@ -20,6 +20,7 @@ import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.citizensnpcs.api.CitizensAPI;
@@ -27,6 +28,10 @@ import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.TraitInfo;
 import rpg_npcs.command.CommadCalculate;
 import rpg_npcs.command.CommandEditRpgNpc;
+import rpg_npcs.logging.Log;
+import rpg_npcs.prerequisite.RangePrerequisite;
+import rpg_npcs.prerequisite.StatePrerequisite;
+import rpg_npcs.prerequisite.magic.HoldingWandPrerequisite;
 import rpg_npcs.role.Role;
 import rpg_npcs.script.factoryPart.ScriptFactoryCommandPart;
 import rpg_npcs.script.factoryPart.ScriptFactoryPausePart;
@@ -96,12 +101,13 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		getCommand("calculate").setExecutor(commandCalculate);
 		
 		// Create default factory set
-		factorySet = new ParserFactorySet();
+		int defaultTriggerPriority = getConfig().getInt("defaultTriggerPriority");
+		factorySet = new ParserFactorySet(defaultTriggerPriority);
 		scriptFactoryCommandPart = new ScriptFactoryCommandPart(factorySet);
 		addDefaultFactoryData();
 		
 		// Load all conversations
-		ParseLog log = reload();
+		Log log = reload();
 		printLogToConsole(log);
 		
 		// Add all custom traits
@@ -134,6 +140,11 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		factorySet.addSupportedStateScope(new StateNpcScope());
 		factorySet.addSupportedStateScope(new StatePlayerScope());
 		factorySet.addSupportedStateScope(new StateWorldScope());
+		
+		// Prerequisites
+		factorySet.addSupportedPrerequisite("range|distance", RangePrerequisite.class);
+		factorySet.addSupportedPrerequisite("state|var(?:iable)|value", StatePrerequisite.class);
+		factorySet.addSupportedPrerequisite("holdingwand", HoldingWandPrerequisite.class);
 		
 		// Triggers
 		factorySet.addSupportedTrigger("(?:player)?move", MoveTrigger.class);
@@ -182,7 +193,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		}
 	}
 	
-	public void printLogToConsole(ParseLog log) {
+	public void printLogToConsole(Log log) {
 		String logString;
 		if (verboseLogging) {
 			logString = log.getFormattedString();
@@ -190,12 +201,14 @@ public class RPGNPCsPlugin extends JavaPlugin {
 			logString = log.getErrors().getFormattedString();
 		}
 		
-		for (String string : logString.split("\n")) {
-			getLogger().info(string);
+		if (logString != "") {
+			for (String string : logString.split("\n")) {
+				getLogger().info(string);
+			}
 		}
 	}
 
-	public ParseLog reload() {
+	public Log reload() {
 		// Unregister old trigger listeners
 		for (Role role : roles.values()) {
 			role.unregisterTriggerListeners(this);
@@ -217,6 +230,7 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		factorySet.setCharactersPerWrap(config.getInt("charactersPerLine"));
 		factorySet.setDefaultLineStartString(ChatColor.translateAlternateColorCodes('&', config.getString("lineStartString")));
 		factorySet.setDefaultSpeed(config.getDouble("defaultTextSpeed"));
+		factorySet.setDefaultTriggerPriority(getConfig().getInt("defaultTriggerPriority"));
 		
 		// Set new data
 		ConfigParser.ConfigResult result = factorySet.getConfigParser().reloadConfig(getConfig());
@@ -298,15 +312,23 @@ public class RPGNPCsPlugin extends JavaPlugin {
 		return null;
 	}
 	
-	public static boolean hasPlaceholderAPI() {
-		return Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
+	public static Plugin getPlaceholderAPI() {
+		return Bukkit.getPluginManager().getPlugin("PlaceholderAPI");
 	}
 	
-	public static boolean hasShop() {
-		return Bukkit.getPluginManager().getPlugin("Shop") != null;
+	public static Plugin getShop() {
+		return Bukkit.getPluginManager().getPlugin("Shop");
+	}
+	
+	public static Plugin getMagic() {
+		return Bukkit.getPluginManager().getPlugin("Magic");
 	}
 	
 	public static RPGNPCsPlugin getPlugin() {
 		return (RPGNPCsPlugin) Bukkit.getPluginManager().getPlugin("RPGNPCs");
+	}
+	
+	public ParserFactorySet getParserFactorySet() {
+		return factorySet;
 	}
 }

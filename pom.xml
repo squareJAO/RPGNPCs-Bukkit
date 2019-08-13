@@ -28,6 +28,10 @@
       <id>filoghost-repo</id>
       <url>http://repo.codemc.org/repository/maven-public/</url>
     </repository>
+    <repository>
+      <id>elmakers-repo</id>
+      <url>http://maven.elmakers.com/repository/</url>
+    </repository>
   </repositories>
   
   <dependencies>
@@ -66,6 +70,12 @@
 	  <groupId>conj</groupId>
 	  <artifactId>Shop</artifactId>
 	  <version>1.0.0</version>
+      <scope>provided</scope>
+	</dependency>
+	<dependency>
+      <groupId>com.elmakers.mine.bukkit</groupId>
+      <artifactId>MagicAPI</artifactId>
+      <version>1.0</version>
       <scope>provided</scope>
 	</dependency>
 	

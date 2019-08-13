@@ -25,11 +25,9 @@ public class ScriptFactoryQuestionPart extends ScriptFactoryPart {
 			
 			// Check data validity
 			if (partStrings.length < 2) {
-				state.log.addError("Question " + optionString + " has less than 2 parts");
-				continue;
+				return ScriptFactoryPartData.fromError("Question " + optionString + " has less than 2 parts");
 			} else if (partStrings.length > 2) {
-				state.log.addError("Question " + optionString + " has more than 2 parts");
-				continue;
+				return ScriptFactoryPartData.fromError("Question " + optionString + " has more than 2 parts");
 			}
 			
 			String questionString = partStrings[0];
@@ -37,8 +35,7 @@ public class ScriptFactoryQuestionPart extends ScriptFactoryPart {
 			
 			// Check valid
 			if (!state.doesScriptExist(idString)) {
-				state.log.addError("QuestionID " + idString + " isn't defined");
-				continue;
+				return ScriptFactoryPartData.fromError("QuestionID " + idString + " isn't defined");
 			}
 			
 			optionList.add(new QuestionOption(questionString, state.getScript(idString)));
@@ -46,9 +43,6 @@ public class ScriptFactoryQuestionPart extends ScriptFactoryPart {
 		
 		// Create question node
 		ScriptQuestionNode questionNode = new ScriptQuestionNode(optionList);
-		
-		// Can't add any text after a question so mark the branch as done
-		state.BranchDone = true;
 		
 		
 		return ScriptFactoryPartData.fromNode(questionNode);

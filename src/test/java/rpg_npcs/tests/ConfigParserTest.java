@@ -13,14 +13,19 @@ import java.util.Set;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
+import org.bukkit.entity.Player;
 import org.junit.Before;
 import org.junit.Test;
 
 import rpg_npcs.DialogueMapping;
 import rpg_npcs.ParserFactorySet;
+import rpg_npcs.RpgNpc;
 import rpg_npcs.WeightedSet;
+import rpg_npcs.prerequisite.Prerequisite;
 import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.ConfigParser.ConfigResult;
+import rpg_npcs.logging.Log;
+import rpg_npcs.logging.Logged;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.script.Script;
@@ -33,9 +38,21 @@ public class ConfigParserTest {
 		}
 	}
 	
+	public static class TestPrerequisite implements Prerequisite {
+		@Override
+		public boolean isMet(Player player, RpgNpc npc) {
+			return false;
+		}
+		
+		public static Logged<Prerequisite> makePrerequisite(String arguments) {
+			return new Logged<Prerequisite>(new TestPrerequisite(), new Log());
+		}
+	}
+	
 	private ParserFactorySet makeFactorySet() {
-		ParserFactorySet factorySet = new ParserFactorySet();
+		ParserFactorySet factorySet = new ParserFactorySet(111);
 		factorySet.addSupportedTrigger("testtrigger1", TestTrigger.class);
+		factorySet.addSupportedPrerequisite("testprerequisite1", TestPrerequisite.class);
 		
 		return factorySet;
 	}
@@ -46,7 +63,7 @@ public class ConfigParserTest {
 		
 		ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 		
-		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
+		assertEquals(result.log.getFormattedString(), 0, result.log.countErrors());
 		assertEquals(1, result.rolesMap.size());
 		assertTrue(result.rolesMap.containsKey(Role.DEFAULT_ROLE_NAME_STRING));
 		
@@ -96,7 +113,7 @@ public class ConfigParserTest {
 			ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 			
 			// Test
-			assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
+			assertEquals(result.log.getFormattedString(), 0, result.log.countErrors());
 			
 			// Check roles are present
 			assertEquals(roles + 1, result.rolesMap.size());
@@ -127,7 +144,6 @@ public class ConfigParserTest {
 	public void triggerConfigTest() {
 		// Create test data
 		Configuration testConfigurationSection = new MemoryConfiguration();
-		testConfigurationSection.set("defaultTriggerPriority", 111);
 		ConfigurationSection triggersConfigurationSection = testConfigurationSection.createSection("triggers");
 		
 		int triggerCount = 6;
@@ -146,7 +162,7 @@ public class ConfigParserTest {
 
 		triggerConfigurationSections[2].set("type", "testTrigger1");
 		ConfigurationSection trigger3PrerequisitesSection = triggerConfigurationSections[2].createSection("prerequisites");
-		trigger3PrerequisitesSection.set("range", 5);
+		trigger3PrerequisitesSection.set("testprerequisite1", "");
 		
 		triggerConfigurationSections[3].set("type", "testTrigger1");
 		triggerConfigurationSections[3].set("priority", 4);
@@ -158,13 +174,13 @@ public class ConfigParserTest {
 		triggerConfigurationSections[5].set("type", "testTrigger1");
 		triggerConfigurationSections[5].set("priority", 6);
 		ConfigurationSection trigger6PrerequisitesSection = triggerConfigurationSections[5].createSection("prerequisites");
-		trigger6PrerequisitesSection.set("range", 5);
+		trigger6PrerequisitesSection.set("testprerequisite1", "");
 		
 		// Generate result
 		ConfigResult result = makeFactorySet().getConfigParser().reloadConfig(testConfigurationSection);
 		
 		// Test
-		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
+		assertEquals(result.log.getFormattedString(), 0, result.log.countErrors());
 		assertEquals(1, result.rolesMap.size());
 		
 		Role baseRole = result.rolesMap.get(Role.DEFAULT_ROLE_NAME_STRING);
@@ -273,7 +289,7 @@ public class ConfigParserTest {
 	@Test
 	public void roleDialoguesConfigTest() {
 		// Test
-		assertEquals(roleDialoguesResult.log.getFormattedString(), 0, roleDialoguesResult.log.errorCount());
+		assertEquals(roleDialoguesResult.log.getFormattedString(), 0, roleDialoguesResult.log.countErrors());
 		assertEquals(roleDialoguesTriggerCount, roleDialoguesBaseRole.getDialogueNamesMap().size());
 		assertEquals(1, roleDialoguesResult.rolesMap.size());
 	}
@@ -461,7 +477,7 @@ public class ConfigParserTest {
 		Role roleE = result.rolesMap.get("e");
 		
 		// Test
-		assertEquals(result.log.getFormattedString(), 0, result.log.errorCount());
+		assertEquals(result.log.getFormattedString(), 0, result.log.countErrors());
 		
 		// 1
 		assertNotSame(roleA.getAllVisibleScripts().get("script2"), roleB.getAllVisibleScripts().get("script2"));

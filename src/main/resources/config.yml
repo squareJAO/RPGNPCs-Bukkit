@@ -61,6 +61,4 @@ triggers:
       range: 5
   rightClick:
     type: rightclick
-      
-# The set of roles
-roles:
+    priority: 600

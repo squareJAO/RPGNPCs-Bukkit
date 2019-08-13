@@ -1,5 +1,8 @@
 package rpg_npcs;
 
+import java.util.List;
+
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,11 +15,12 @@ import com.gmail.filoghost.holographicdisplays.api.line.TextLine;
 import net.citizensnpcs.api.npc.NPC;
 
 public class SpeechBubble {
-	protected JavaPlugin _instancingPlugin;
+	protected JavaPlugin instancingPlugin;
 	
-	protected NPC _linkedNPC;
-	protected Hologram _hologram;
-	protected TextLine _lastLine;
+	protected NPC linkedNPC;
+	protected Hologram hologram;
+	protected TextLine lastLine;
+	protected List<Color> currentColors; 
 
 	protected double _xOffset = 0;
 	protected double _yOffset = 0.8;
@@ -24,13 +28,13 @@ public class SpeechBubble {
 	
 	public SpeechBubble(JavaPlugin instancingPlugin, NPC linkedNPC) {
 		// Pass values
-		_instancingPlugin = instancingPlugin;
-		_linkedNPC = linkedNPC;
+		this.instancingPlugin = instancingPlugin;
+		this.linkedNPC = linkedNPC;
 		
-		Entity linkedEntity = _linkedNPC.getEntity();
+		Entity linkedEntity = linkedNPC.getEntity();
 		
 		// Create hologram
-		_hologram = HologramsAPI.createHologram(instancingPlugin, linkedEntity.getLocation());
+		hologram = HologramsAPI.createHologram(instancingPlugin, linkedEntity.getLocation());
 		
 		// Create move loop
 		final SpeechBubble thisSpeechBubble = this;
@@ -43,18 +47,22 @@ public class SpeechBubble {
 				
 				// Else move it on top of the entity
 				else {
-					thisSpeechBubble.teleport(linkedEntity.getLocation().add(_xOffset, _yOffset + linkedEntity.getHeight() + _hologram.getHeight(), _zOffset));
+					thisSpeechBubble.teleport(linkedEntity.getLocation().add(_xOffset, _yOffset + linkedEntity.getHeight() + hologram.getHeight(), _zOffset));
 				}
 			}
 		}.runTaskTimer(instancingPlugin, 1, 1);
 	}
 	
 	public TextLine getLastTextLine() {
-		return _lastLine;
+		return lastLine;
 	}
 	
 	public int getLastLineLength() {
-		String lastLineString = getLastTextLine().getText();
+		if (lastLine == null) {
+			return 0;
+		}
+		
+		String lastLineString = lastLine.getText();
 		int length = lastLineString.length();
 		
 		// Remove formatting characters
@@ -69,36 +77,36 @@ public class SpeechBubble {
 	}
 	
 	public String getLastLineString() {
-		if (_lastLine == null) {
+		if (lastLine == null) {
 			return "";
 		}
 		
-		return _lastLine.getText();
+		return lastLine.getText();
 	}
 
 	public void setLastLineText(String string) {
 		// Check there is a line to add to
-		if (_lastLine == null) {
+		if (lastLine == null) {
 			addNewLine();
 		}
 		
-		_lastLine.setText(string);
+		lastLine.setText(string);
 	}
 	
 	public void clearText() {
-		_hologram.clearLines();
-		_lastLine = null;
+		hologram.clearLines();
+		lastLine = null;
 	}
 	
 	public void addNewLine() {
-		_lastLine = _hologram.appendTextLine("");
+		lastLine = hologram.appendTextLine("");
 	}
 	
 	public NPC getNpc() {
-		return _linkedNPC;
+		return linkedNPC;
 	}
 	
 	protected void teleport (Location loc) {
-		_hologram.teleport(loc);
+		hologram.teleport(loc);
 	}
 }

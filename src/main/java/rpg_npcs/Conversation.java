@@ -123,10 +123,10 @@ public class Conversation {
 		}
 		
 		if (currentNode == null) {
-			isRunning = false;
-			
 			// Clear the chat once finished
 			getSpeechBubble().clearText();
+			
+			isRunning = false;
 		}
 		
 		this.currentNode = currentNode;

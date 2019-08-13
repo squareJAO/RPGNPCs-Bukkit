@@ -7,8 +7,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import rpg_npcs.ParseLog;
 import rpg_npcs.ParserFactorySet;
+import rpg_npcs.logging.Log;
+import rpg_npcs.logging.Logged;
 import rpg_npcs.prerequisite.PrerequisiteSet;
 import rpg_npcs.script.ScriptFactoryPartData;
 import rpg_npcs.script.ScriptFactoryState;
@@ -47,12 +48,14 @@ public class ScriptFactoryCommandPart extends ScriptFactoryPart {
 		// Extract any prerequisites
 		PrerequisiteSet prerequisiteSet = new PrerequisiteSet();
 		if (prerequisitesString != null) {
-			ParseLog log = new ParseLog();
-			prerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(log, prerequisitesString);
+			Logged<PrerequisiteSet> loggedPrerequisiteSet = factorySet.getPrerequisiteFactory().createPrerequisiteSet(prerequisitesString);
 			
-			if (log.errorCount() > 0) {
+			Log log = loggedPrerequisiteSet.getLog();
+			if (log.countErrors() > 0) {
 				return ScriptFactoryPartData.fromError(log.getErrors().getFormattedString());
 			}
+			
+			prerequisiteSet = loggedPrerequisiteSet.getResult();
 		}
 		
 		// Extract command & argument

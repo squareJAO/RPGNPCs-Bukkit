@@ -1,102 +1,45 @@
 package rpg_npcs.prerequisite;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.NotImplementedException;
-
-import rpg_npcs.ParseLog;
-import rpg_npcs.ParserFactorySet;
-import rpg_npcs.prerequisite.StatePrerequisite.Comparison;
-import rpg_npcs.state.StateType;
+import rpg_npcs.logging.Log;
+import rpg_npcs.logging.LogEntry.MessageType;
+import rpg_npcs.logging.Logged;
 
 public class PrerequisiteFactory {
-	public static class PrerequisiteFactoryReturnData {
-		public ParseLog log = new ParseLog();
-		public Prerequisite prerequisite = null;
+	private final Map<Pattern, Class<? extends Prerequisite>> supportedPrerequisiteRecords = new HashMap<Pattern, Class<? extends Prerequisite>>();
+	
+	public PrerequisiteFactory() {
 	}
-	
-	private final ParserFactorySet parserFactorySet;
-	
-	public PrerequisiteFactory(ParserFactorySet parserFactorySet) {
-		this.parserFactorySet = parserFactorySet;
-	}
-	
-	public PrerequisiteFactoryReturnData createPrerequisite(String key, String value) {
-		PrerequisiteFactoryReturnData returnData = new PrerequisiteFactoryReturnData();
-		
-		switch (key.toLowerCase()) {
-		case "range":
-			try {
-				double range = Double.parseDouble(value);
-				returnData.prerequisite = new RangePrerequisite(range);
-			} catch (NumberFormatException e) {
-				returnData.log.addError("Unrecognised number for Range: '" + value + "'");
-			}
-			break;
-		case "state":
-			String valueTypeString = value.split(" ")[0];
-			StateType<?> supportedStateType = parserFactorySet.getSupportedStateTypeRecords().get(valueTypeString);
-			
-			if (supportedStateType == null) {
-				returnData.log.addError("Unrecognised state type: '" + valueTypeString + "'");
-				break;
-			}
-			
-			// Get expression
-			String inequalityString = value.substring(valueTypeString.length() + 1);
-			Matcher inequalityMatcher = Pattern.compile("(.+)((?:<|>)=?|==|!=)(.+)").matcher(inequalityString);
-			
-			if (!inequalityMatcher.matches()) {
-				returnData.log.addError("Invalid inequality: '" + inequalityString + "'");
-				break;
-			}
-			
-			String lhsExpressionString = inequalityMatcher.group(1);
-			String inequalitySignString = inequalityMatcher.group(2);
-			String rhsExpressionString = inequalityMatcher.group(3);
-			
-			StatePrerequisite.Comparison comparison;
-			switch (inequalitySignString) {
-			case "<":
-				comparison = Comparison.LESS_THAN;
-				break;
-			case "<=":
-				comparison = Comparison.LESS_THAN_OR_EQUAL_TO;
-				break;
-			case "=":
-			case "==":
-				comparison = Comparison.EQUAL_TO;
-				break;
-			case ">":
-				comparison = Comparison.GREATER_THAN;
-				break;
-			case ">=":
-				comparison = Comparison.GREATER_THAN_OR_EQUAL_TO;
-				break;
-			case "!=":
-				comparison = Comparison.NOT_EQUAL_TO;
-				break;
 
-			default:
-				throw new NotImplementedException();
+	public void addSupportedType(String prerequisiteKeyword, Class<? extends Prerequisite> prerequisite) {
+		supportedPrerequisiteRecords.put(Pattern.compile(prerequisiteKeyword), prerequisite);
+	}
+	
+	public Logged<Prerequisite> createPrerequisite(String key, String value) {
+		for (Pattern prerequisitePattern : supportedPrerequisiteRecords.keySet()) {
+			if (prerequisitePattern.matcher(key.toLowerCase()).matches()) {
+				try {
+					Method method = supportedPrerequisiteRecords.get(prerequisitePattern).getMethod("makePrerequisite", String.class);
+					@SuppressWarnings("unchecked")
+					Logged<Prerequisite> loggedPrerequisite = (Logged<Prerequisite>) method.invoke(null, value);
+					return loggedPrerequisite;
+				} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+					e.printStackTrace();
+					return new Logged<Prerequisite>(null, Log.fromString(e.getLocalizedMessage(), MessageType.ERROR));
+				}
 			}
-			
-			returnData.prerequisite = new StatePrerequisite(comparison, supportedStateType, lhsExpressionString, rhsExpressionString);
-			
-			break;
-		default:
-			returnData.log.addError("Unrecognised prerequisite key: '" + key + "'");
-			break;
 		}
 		
-		return returnData;
+		return new Logged<Prerequisite>(null, Log.fromString("No matching prerequisite found for " + key, MessageType.ERROR));
 	}
 	
-	public PrerequisiteSet createPrerequisiteSet(ParseLog log, String prerequisitesString) {
+	public Logged<PrerequisiteSet> createPrerequisiteSet(String prerequisitesString) {
 		String[] prerequisites = prerequisitesString.split(";");
 		
 		Map<String, String> prerequisiteDataMap = new HashMap<String, String>();
@@ -110,26 +53,26 @@ public class PrerequisiteFactory {
 			prerequisiteDataMap.put(prerequisiteKeyString, prerequisiteValueString);
 		}
 		
-		return createPrerequisiteSet(log, prerequisiteDataMap);
+		return createPrerequisiteSet(prerequisiteDataMap);
 	}
 
-	public PrerequisiteSet createPrerequisiteSet(ParseLog log, Map<String, String> prerequisiteDataMap) {
+	public Logged<PrerequisiteSet> createPrerequisiteSet(Map<String, String> prerequisiteDataMap) {
+		Log log = new Log();
+		
 		PrerequisiteSet prerequisites = new PrerequisiteSet();
 		
 		// Create prerequisites
-		log.addInfo(" - prerequisites:");
 		for (Entry<String, String> entry : prerequisiteDataMap.entrySet()) {
 			// Convert to prerequisite
-			PrerequisiteFactoryReturnData returnPrerequisiteData = createPrerequisite(entry.getKey(), entry.getValue());
+			Logged<Prerequisite> returnPrerequisiteData = createPrerequisite(entry.getKey(), entry.getValue());
 			
-			if (returnPrerequisiteData.prerequisite != null) {
-				prerequisites.add(returnPrerequisiteData.prerequisite);
+			if (returnPrerequisiteData.getResult() != null) {
+				prerequisites.add(returnPrerequisiteData.getResult());
 			}
 			
-			log.addInfo("   - " + entry.getKey() + ": " + entry.getValue());
-			log.add(returnPrerequisiteData.log);
+			log.addNamedEntry(entry.getKey(), returnPrerequisiteData.getLog());
 		}
 		
-		return prerequisites;
+		return new Logged<PrerequisiteSet>(prerequisites, log);
 	}
 }

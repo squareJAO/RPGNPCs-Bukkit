@@ -22,9 +22,9 @@ public class ScriptTextNode extends ScriptLinearNode {
 	private final double textSpeed;
 	
 	private final String SHORTPAUSE_CHARACTERS = ",:;";
-	private final int SHORTPAUSE = 3;
+	private final int SHORTPAUSE = 4;
 	private final String LONGPAUSE_CHARACTERS = ".?!";
-	private final int LONGPAUSE = 5;
+	private final int LONGPAUSE = 7;
 
 	private final int charactersPerWrap;
 	private final String defaultLineStartString;
@@ -48,7 +48,7 @@ public class ScriptTextNode extends ScriptLinearNode {
 		String textString = templateTextString;
 
 		// Check if PlaceholdersAPI is present and format text
-		if (RPGNPCsPlugin.hasPlaceholderAPI()) {
+		if (RPGNPCsPlugin.getPlaceholderAPI() != null) {
 			textString = PlaceholderAPI.setPlaceholders(conversation.getPlayer(), textString);
 		}
 		
@@ -71,6 +71,8 @@ public class ScriptTextNode extends ScriptLinearNode {
 		BukkitTask newTask = new BukkitRunnable() {
 			private double charsToAdd = 0;
 			protected int nextCharIndex = 0;
+			
+			private String currentColourString = null;
 			
 			public void run() {
 				// Add char multiplier
@@ -99,14 +101,20 @@ public class ScriptTextNode extends ScriptLinearNode {
 						case '\n':
 							// Add a new line
 							bubble.addNewLine();
-							bubble.setLastLineText(defaultLineStartString);
+							if (currentColourString == null) {
+								bubble.setLastLineText(defaultLineStartString);
+							} else {
+								bubble.setLastLineText(defaultLineStartString + currentColourString);
+							}
 							
 							nextCharIndex += 1;
 							break;
 						// On a formatting char add the formatting code but set to add another char too
 						case '§':
 							if (nextCharIndex + 1 < finalTextString.length()) {
-								bubble.setLastLineText(bubble.getLastLineString() + '§' + finalTextString.charAt(nextCharIndex + 1));
+								String colourCodeString = "§" + finalTextString.charAt(nextCharIndex + 1);
+								bubble.setLastLineText(bubble.getLastLineString() + colourCodeString);
+								currentColourString = colourCodeString;
 							}
 							nextCharIndex += 2;
 							break;

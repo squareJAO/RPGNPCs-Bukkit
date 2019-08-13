@@ -15,9 +15,9 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
 import net.md_5.bungee.api.ChatColor;
-import rpg_npcs.ParseLog;
 import rpg_npcs.RPGNPCsPlugin;
 import rpg_npcs.RpgNpc;
+import rpg_npcs.logging.Log;
 import rpg_npcs.role.Role;
 import rpg_npcs.role.RolePropertyMap;
 import rpg_npcs.state.State;
@@ -181,7 +181,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 			sender.sendMessage("Reloading npcs...");
 			
 			// Regenerate the dialogue trees
-			ParseLog reloadLog;
+			Log reloadLog;
 			try {
 				reloadLog = plugin.reload();
 			} catch (Exception e) {
@@ -191,7 +191,7 @@ public class CommandEditRpgNpc implements TabExecutor {
 			
 			// Print log
 			plugin.printLogToConsole(reloadLog);
-			sender.sendMessage(reloadLog.getFormattedString());
+			sender.sendMessage(reloadLog.getErrors().getFormattedString());
 			sender.sendMessage("Reloaded.");
 			
 			return true;

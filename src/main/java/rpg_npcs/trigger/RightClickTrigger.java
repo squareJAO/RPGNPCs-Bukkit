@@ -1,10 +1,14 @@
 package rpg_npcs.trigger;
 
 import rpg_npcs.RpgNpc;
+import rpg_npcs.RpgTrait;
 import rpg_npcs.prerequisite.PrerequisiteSet;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+
+import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.npc.NPC;
 
 public class RightClickTrigger extends Trigger {
 
@@ -14,11 +18,14 @@ public class RightClickTrigger extends Trigger {
 
 	@EventHandler
 	public void playerRightClick(PlayerInteractEntityEvent event) {
-		for (RpgNpc npc : getNpcs()) {
-			if (npc.getEntity().equals(event.getRightClicked())) {
-				trigger(event.getPlayer(), npc);
-				return;
-			}
-		}
+        NPC npc = CitizensAPI.getNPCRegistry().getNPC(event.getRightClicked());
+        if (npc == null) {
+            return;
+        }
+        RpgNpc rpgNpc = npc.getTrait(RpgTrait.class);
+        if (rpgNpc == null) {
+            return;
+        }
+		trigger(event.getPlayer(), rpgNpc);
 	}
 }

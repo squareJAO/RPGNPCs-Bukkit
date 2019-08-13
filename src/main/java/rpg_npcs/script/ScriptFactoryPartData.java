@@ -13,22 +13,28 @@ public class ScriptFactoryPartData {
 	public final HeldData heldData;
 	public final String errorText;
 	public final ScriptNode node;
+	public final int pauseBefore;
 	
-	private ScriptFactoryPartData(HeldData heldData, String errorText, ScriptNode node) {
+	private ScriptFactoryPartData(HeldData heldData, String errorText, ScriptNode node, int pauseBefore) {
 		this.heldData = heldData;
 		this.errorText = errorText;
 		this.node = node;
+		this.pauseBefore = pauseBefore;
 	}
 	
 	public static ScriptFactoryPartData fromError(String errorText) {
-		return new ScriptFactoryPartData(HeldData.error, errorText, null);
+		return new ScriptFactoryPartData(HeldData.error, errorText, null, 0);
 	}
 	
 	public static ScriptFactoryPartData fromNode(ScriptNode node) {
-		return new ScriptFactoryPartData(HeldData.node, "", node);
+		return new ScriptFactoryPartData(HeldData.node, "", node, 0);
+	}
+	
+	public static ScriptFactoryPartData fromNode(ScriptNode node, int pauseBefore) {
+		return new ScriptFactoryPartData(HeldData.node, "", node, pauseBefore);
 	}
 	
 	public static ScriptFactoryPartData fromNothing() {
-		return new ScriptFactoryPartData(HeldData.nothing, "", null);
+		return new ScriptFactoryPartData(HeldData.nothing, "", null, 0);
 	}
 }

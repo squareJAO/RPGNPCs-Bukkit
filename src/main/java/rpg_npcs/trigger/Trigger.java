@@ -75,16 +75,23 @@ public abstract class Trigger implements RoleNamedProperty, Listener {
 			@Override
 			public void run() {
 				try {
-					for (RpgNpc npc : npcs) {
-						if (npc.isSpawned() && npc.getEntity().getWorld() == player.getWorld()
-							&& priority > npc.getConversationPriority() && prerequisites.areMet(player, npc)) {
-							// Return to being synchronous
-							startConversationSynchronous(player, npc);
+					if (player.isValid()) {
+						for (RpgNpc npc : npcs) {
+							if (priority > npc.getConversationPriority() &&
+									npc.isSpawned() &&
+									npc.getEntity().getLocation().getChunk().isLoaded() &&
+									npc.getEntity().getWorld().equals(player.getWorld()) &&
+									npc.getEntity().isValid() &&
+									npc.getEntity().isValid() &&
+									prerequisites.areMet(player, npc)) {
+								// Return to being synchronous
+								startConversationSynchronous(player, npc);
+							}
 						}
 					}
 				} finally { // Ensure player is unlocked but still propagate exception
 					// Unlock player after a short delay
-					unlockPlayerSynchronous(player, 10);
+					unlockPlayerSynchronous(player, RPGNPCsPlugin.getPlugin().ticksPerRangeCheck);
 				}
 			}
 		};

@@ -1,8 +1,10 @@
 package rpg_npcs.prerequisite;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.entity.Player;
 
 import rpg_npcs.RpgNpc;
+import rpg_npcs.logging.Logged;
 
 public interface Prerequisite {
 	/**
@@ -12,4 +14,8 @@ public interface Prerequisite {
 	 * @return True if the prerequisite is met
 	 */
 	public boolean isMet(Player player, RpgNpc npc);
+	
+	public static Logged<Prerequisite> makePrerequisite(String arguments) {
+		throw new NotImplementedException();
+	}
 }

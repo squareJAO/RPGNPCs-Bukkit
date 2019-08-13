@@ -2,6 +2,7 @@ package rpg_npcs;
 
 import java.util.regex.Pattern;
 
+import rpg_npcs.prerequisite.Prerequisite;
 import rpg_npcs.prerequisite.PrerequisiteFactory;
 import rpg_npcs.script.ScriptFactory;
 import rpg_npcs.script.factoryPart.ScriptFactoryPart;
@@ -21,14 +22,14 @@ public class ParserFactorySet {
 	private ConfigParser configParser;
 	
 	// Data for building above factories
-	private SupportedStateTypeRecords supportedStateTypeRecords;
-	private SupportedStateScopeRecords supportedStateScopeRecords;
+	private final SupportedStateTypeRecords supportedStateTypeRecords;
+	private final SupportedStateScopeRecords supportedStateScopeRecords;
 	private double defaultSpeed;
 	private int charactersPerWrap;
 	private String defaultLineStartString;
 	
-	public ParserFactorySet() {
-		configParser = new ConfigParser(this);
+	public ParserFactorySet(int defaultEventPriority) {
+		configParser = new ConfigParser(this, defaultEventPriority);
 		
 		defaultSpeed = 0.7;
 		charactersPerWrap = 15;
@@ -40,7 +41,7 @@ public class ParserFactorySet {
 		scriptFactory = new ScriptFactory(defaultSpeed, charactersPerWrap, defaultLineStartString);
 		
 		triggerFactory = new TriggerFactory();
-		prerequisiteFactory = new PrerequisiteFactory(this);
+		prerequisiteFactory = new PrerequisiteFactory();
 	}
 	
 	public final void addScriptFactoryPart(ScriptFactoryPart part) {
@@ -53,6 +54,10 @@ public class ParserFactorySet {
 	
 	public final void addSupportedStateScope(StateScope scope) {
 		supportedStateScopeRecords.addSupportedType(scope);
+	}
+	
+	public void addSupportedPrerequisite(String prerequisiteKeyword, Class<? extends Prerequisite> prerequisite){
+		prerequisiteFactory.addSupportedType(prerequisiteKeyword, prerequisite);
 	}
 
 	public void addSupportedTrigger(String string, Class<? extends Trigger> triggerClass) {
@@ -93,5 +98,9 @@ public class ParserFactorySet {
 
 	public final void setDefaultLineStartString(String defaultLineStartString) {
 		this.defaultLineStartString = defaultLineStartString;
+	}
+
+	public void setDefaultTriggerPriority(int defaultEventPriority) {
+		configParser.setDefaultTriggerPriority(defaultEventPriority);
 	}
 }

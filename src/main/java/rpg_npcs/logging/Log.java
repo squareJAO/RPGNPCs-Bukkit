@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 
@@ -43,13 +44,7 @@ public class Log implements LogEntry {
 	}
 	
 	public String getFormattedString(Map<MessageType, ChatColor> colours) {
-		String outputString = "";
-		
-		for (LogEntry logEntry : entries) {
-			outputString += logEntry.getFormattedString(colours) + "\n";
-		}
-		
-		return outputString;
+		return entries.stream().map(entry -> entry.getFormattedString(colours)).collect(Collectors.joining("\n"));
 	}
 	
 	public String getFormattedString() {
